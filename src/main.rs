@@ -73,8 +73,10 @@ fn main() {
         spawn_car_at_entrance_probability: args.spawn_car_at_entrance_probability,
         remove_car_on_exit_probability: args.remove_car_on_exit_probability,
         // Metrics
-        average_speed__meters_per_second: road.average_speed() * CELL_M / ROUND_S,
-        exit_cell_flow__cars_per_minute: road.cell(args.length - 1).flow(args.rounds) / ROUND_S * 60.0
+        average_speed__kilometers_per_hour: road.average_speed() * CELL_M / ROUND_S * 3.6,
+        exit_cell_flow__cars_per_minute: road.cell(args.length - 1).flow(args.rounds) / ROUND_S * 60.0,
+        accelerations: road.accelerations(),
+        deaccelerations: road.deaccelerations()
     }.dump());
 }
 

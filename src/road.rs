@@ -68,6 +68,26 @@ impl Road {
         return sum / n_cars;
     }
 
+    pub fn accelerations(&self) -> u32 {
+        let mut sum = 0;
+        for cell in &self.cells {
+            if let Some(car) = cell.car() {
+                sum += car.accelerations();
+            }
+        }
+        return sum;
+    }
+
+    pub fn deaccelerations(&self) -> u32 {
+        let mut sum = 0;
+        for cell in &self.cells {
+            if let Some(car) = cell.car() {
+                sum += car.deaccelerations();
+            }
+        }
+        return sum;
+    }
+
     /// Returns the number of cars currently on the road.
     pub fn n_cars(&self) -> f64 {
         return self.n_spawned_cars - self.n_removed_cars;

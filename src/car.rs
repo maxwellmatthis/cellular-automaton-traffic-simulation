@@ -1,17 +1,23 @@
 pub struct Car {
     max_speed: u8,
+    last_speed: u8,
     speed: u8,
     rounds: u32,
-    distance: u32
+    distance: u32,
+    accelerations: u32,
+    deaccelerations: u32
 }
 
 impl Car {
     pub fn new(max_speed: u8, initial_speed: u8) -> Self {
         return Self {
             max_speed,
+            last_speed: initial_speed,
             speed: initial_speed,
             rounds: 0,
-            distance: 0
+            distance: 0,
+            accelerations: 0,
+            deaccelerations: 0
         }
     }
 
@@ -23,16 +29,29 @@ impl Car {
         return self.rounds;
     }
 
-    // Returns the average number of cells driven per round.
+    /// Returns the average number of cells driven per round.
     pub fn average_speed(&self) -> f64 {
         return Into::<f64>::into(self.distance) / Into::<f64>::into(self.rounds);
     }
 
-    // Records the current round by incrementing the rounds counter and adding the distance
-    // traveled to the total.
+    pub fn accelerations(&self) -> u32 {
+        return self.accelerations;
+    }
+
+    pub fn deaccelerations(&self) -> u32 {
+        return self.deaccelerations;
+    }
+
+    /// Records the current round
     pub fn record(&mut self) {
         self.rounds += 1;
         self.distance += Into::<u32>::into(self.speed());
+        if self.speed > self.last_speed {
+            self.accelerations += 1;
+        } else if self.speed < self.last_speed {
+            self.deaccelerations += 1;
+        }
+        self.last_speed = self.speed;
     }
 
     /// Increases the speed by one if the maximum speed has not yet been reached.
