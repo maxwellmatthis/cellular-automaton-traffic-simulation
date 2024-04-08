@@ -1,10 +1,12 @@
 use road::Road;
+use image_drawer::ImageDrawer;
 use clap::Parser;
 use json::*;
 
 mod road;
 mod cell;
 mod car;
+mod image_drawer;
 
 const CELL_M: f64 = 7.5;
 const ROUND_S: f64 = 1.0;
@@ -45,7 +47,11 @@ struct Args {
 
     /// Whether to print the current road state to stdout.
     #[arg(short, long, default_value_t = false)]
-    verbose: bool
+    verbose: bool,
+
+    /// Where to save the visualization image.
+    #[arg(short, long, default_value = "traffic.png")]
+    out: String
 }
 
 fn main() {
@@ -59,11 +65,15 @@ fn main() {
         args.spawn_car_at_entrance_probability,
         args.remove_car_on_exit_probability
     );
+    let mut image_drawer = ImageDrawer::new(&road, args.rounds + 1);
+    image_drawer.add_snapshot(&road);
     if args.verbose { println!("{}", road); }
     for _ in 0..args.rounds {
         road.round();
+        image_drawer.add_snapshot(&road);
         if args.verbose { println!("{}", road); }
     }
+    image_drawer.save(args.out).unwrap();
     println!("{}", object!{
         // Settings
         rounds: args.rounds,
@@ -74,7 +84,7 @@ fn main() {
         remove_car_on_exit_probability: args.remove_car_on_exit_probability,
         // Metrics
         average_speed__kilometers_per_hour: road.average_speed() * CELL_M / ROUND_S * 3.6,
-        exit_cell_flow__cars_per_minute: road.cell(args.length - 1).flow(args.rounds) / ROUND_S * 60.0,
+        exit_cell_flow__cars_per_minute: road.cells()[args.length - 1].flow(args.rounds) / ROUND_S * 60.0,
         accelerations: road.accelerations(),
         deaccelerations: road.deaccelerations()
     }.dump());

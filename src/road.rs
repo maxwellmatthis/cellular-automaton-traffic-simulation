@@ -55,6 +55,10 @@ impl Road {
         return rng.gen::<f32>() <= probability;
     }
 
+    pub fn max_speed(&self) -> u8 {
+        return self.max_speed;
+    }
+
     /// Returns the average number of cells driven per round.
     pub fn average_speed(&self) -> f64 {
         let mut n_cars: f64 = 0.0;
@@ -93,9 +97,9 @@ impl Road {
         return self.n_spawned_cars - self.n_removed_cars;
     }
 
-    // Provides read access to a road cell at a specific index.
-    pub fn cell(&self, index: usize) -> &Cell {
-        return &self.cells[index];
+    // Provides read access to the road cells.
+    pub fn cells(&self) -> &Vec<Cell> {
+        return &self.cells;
     }
 
     /// Simulates one round of the cellular automaton.
