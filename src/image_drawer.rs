@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use crate::Road;
 use image::{ImageError, Rgb, RgbImage};
 
@@ -48,7 +49,7 @@ impl ImageDrawer {
         ])
     }
 
-    pub fn save(&self, filepath: String) -> Result<(), ImageError> {
+    pub fn save(&self, filepath: PathBuf) -> Result<(), ImageError> {
         return self.image.save(filepath);
     }
 }

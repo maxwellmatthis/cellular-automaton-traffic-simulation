@@ -1,4 +1,5 @@
 use std::time::Instant;
+use std::path::PathBuf;
 use road::Road;
 use image_drawer::ImageDrawer;
 use clap::Parser;
@@ -52,7 +53,7 @@ struct Args {
 
     /// Where to save the visualization image.
     #[arg(short, long, default_value = "traffic.png")]
-    out: String
+    out: PathBuf
 }
 
 fn main() {
