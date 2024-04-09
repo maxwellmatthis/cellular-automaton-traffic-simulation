@@ -35,7 +35,7 @@ when running the simulator from the command line (see usage below).
 
 The simulator can print the details of each round to stdout using the `-v` (verbose) switch and/or
 generate an image using the `-i` (image) switch.
-__Note:__ The number in braces in front of every line in verbose mode is the number of vehicles on the
+__Note:__ The number in parenthesis in front of every line in verbose mode is the number of vehicles on the
 road. In image mode cars are represented as pixels ranging from red (stopped) to green (max_speed).
 Each row represents a round. The image is read from the bottom up.
 
