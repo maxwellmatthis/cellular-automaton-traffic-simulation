@@ -14,6 +14,8 @@ cargo run -- -h
 
 # Build the simulator binary to use without cargo
 cargo build --release
+# Run the release binary and show the usage
+target/release/cellular-automaton-traffic-simulation -h
 ```
 
 ### Benchmark Tools
@@ -25,6 +27,12 @@ You'll need to have Python3 (`>=3.11`), as well as matplotlib and numpy installe
 # Quickly install requirements
 pip install -r benchmarks/requirements.txt
 ```
+
+__Note:__ The benchmarking tools can run the simulator through cargo or directly.
+The default is running the release binary directly, howevery, you'll need to compile it first using
+`cargo build --release`. Directly running the release binary is recommended as its faster and
+doesn't print every time like cargo does. If you'd like to run the simulator through cargo, go to
+benchmarks/adapter.py:6 and change the comment.
 
 ## Usage
 
