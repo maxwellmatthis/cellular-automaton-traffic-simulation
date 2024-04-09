@@ -1,5 +1,5 @@
 import numpy as np
-from adapter import run_average, SimulationOptions, SimulationMetrics
+from adapter import run_average, SimulationOptions
 from plot_helper import plot
 
 VARIABLE = "Traffic Density"
