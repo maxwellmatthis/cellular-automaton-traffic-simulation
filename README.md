@@ -72,6 +72,10 @@ Options:
           Print version
 ```
 
+Here's an example of what a simulation image looks like:
+
+![traffic](https://github.com/maxwellmatthis/cellular-automaton-traffic-simulation/assets/58150536/c449c61a-d267-4255-8412-61ecf133157d)
+
 ### Benchmarking
 
 The [python adapter](./benchmarks/adapter.py) provides interfaces and convenience functions that
@@ -114,3 +118,6 @@ plot(VARIABLE, "Accelerations", max_speeds, accelerations, ROUNDS)
 plot(VARIABLE, "Deaccelerations", max_speeds, deaccelerations, ROUNDS)
 ```
 
+Here's an example of what a 2D plot looks like:
+
+![Max_Speed:Exit_Cell_Flow_(car:min)_(100_rounds_each)](https://github.com/maxwellmatthis/cellular-automaton-traffic-simulation/assets/58150536/19253a33-7866-42ef-a9a4-486a57d4866e)
