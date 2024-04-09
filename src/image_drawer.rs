@@ -17,6 +17,14 @@ impl ImageDrawer {
         };
     }
 
+    pub fn placeholder() -> Self {
+        return Self {
+            image: RgbImage::new(0, 0),
+            current_row: 0,
+            max_speed: 0
+        };
+    }
+
     pub fn add_snapshot(&mut self, road: &Road) {
         if self.current_row == 0 {
             panic!("Image is already full.");

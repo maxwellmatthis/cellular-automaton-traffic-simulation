@@ -166,7 +166,11 @@ impl Road {
                     self.cells[target_index % n_cells].put_car(car);
                 }
                 None => {
-                    cells_to_next_car += 1;
+                    // Prevents from adding with overflow in cases where the
+                    // next gap is very far away
+                    if cells_to_next_car < self.max_speed {
+                        cells_to_next_car += 1;
+                    }
                 }
             }
             

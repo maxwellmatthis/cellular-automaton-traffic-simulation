@@ -33,27 +33,31 @@ struct Args {
     place_car_probability: f32,
 
     /// The probability with which cars dilly-dally. (slow down randomly)
-    #[arg(long, default_value_t = 0.5)]
+    #[arg(long, default_value_t = 0.2)]
     dilly_dally_probability: f32,
 
     /// The probability with which a new car is spawned in the zeroth cell of the highway. Note:
     /// The cell must be clear.
-    #[arg(long, default_value_t = 0.5)]
+    #[arg(long, default_value_t = 0.0)]
     spawn_car_at_entrance_probability: f32,
 
     /// The probability with which an existing car is removed when it passes the last cell of the
     /// highway. Colisions with cars in the first cells are ignored, unlike with the usual
     /// wrap-around.
-    #[arg(long, default_value_t = 0.5)]
+    #[arg(long, default_value_t = 0.0)]
     remove_car_on_exit_probability: f32,
 
     /// Whether to print the current road state to stdout.
     #[arg(short, long, default_value_t = false)]
     verbose: bool,
 
+    /// Whether to create a visualization image of the simulation.
+    #[arg(short, long, default_value_t = false)]
+    image: bool,
+
     /// Where to save the visualization image.
     #[arg(short, long, default_value = "traffic.png")]
-    out: PathBuf
+    out_path: PathBuf
 }
 
 fn main() {
@@ -68,15 +72,19 @@ fn main() {
         args.spawn_car_at_entrance_probability,
         args.remove_car_on_exit_probability
     );
-    let mut image_drawer = ImageDrawer::new(&road, args.rounds + 1);
-    image_drawer.add_snapshot(&road);
+    let mut image_drawer = if args.image {
+        ImageDrawer::new(&road, args.rounds + 1)
+    } else {
+        ImageDrawer::placeholder()
+    };
+    if args.image { image_drawer.add_snapshot(&road); }
     if args.verbose { println!("{}", road); }
     for _ in 0..args.rounds {
         road.round();
-        image_drawer.add_snapshot(&road);
+        if args.image { image_drawer.add_snapshot(&road); }
         if args.verbose { println!("{}", road); }
     }
-    image_drawer.save(args.out).unwrap();
+    if args.image { image_drawer.save(args.out_path).unwrap(); }
     println!("{}", object!{
         // Settings
         rounds: args.rounds,
@@ -86,8 +94,8 @@ fn main() {
         spawn_car_at_entrance_probability: args.spawn_car_at_entrance_probability,
         remove_car_on_exit_probability: args.remove_car_on_exit_probability,
         // Metrics
-        runtime: format!("{:?}", start.elapsed()),
-        average_speed__kilometers_per_hour: road.average_speed() * CELL_M / ROUND_S * 3.6,
+        runtime: start.elapsed().as_secs_f64(),
+        average_speed__kilometers_per_hour: road.average_speed() * (CELL_M / ROUND_S) * 3.6,
         exit_cell_flow__cars_per_minute: road.cells()[args.length - 1].flow(args.rounds) / ROUND_S * 60.0,
         accelerations: road.accelerations(),
         deaccelerations: road.deaccelerations()
