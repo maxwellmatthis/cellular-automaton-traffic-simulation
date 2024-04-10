@@ -7,18 +7,18 @@ pub struct Cell {
 
 impl Cell {
     pub fn new() -> Self {
-        return Self {
+        Self {
             car: None,
             cars_passed: 0
         }
     }
 
     pub fn car(&self) -> &Option<Car> {
-        return &self.car;
+        &self.car
     }
 
     pub fn take_car(&mut self) -> Option<Car> {
-        return self.car.take();
+        self.car.take()
     }
 
     pub fn put_car(&mut self, car: Car) {
@@ -35,7 +35,7 @@ impl Cell {
 
     /// Returns the cars per round that have come by this cell.
     pub fn flow(&self, rounds: u32) -> f64 {
-        return Into::<f64>::into(self.cars_passed) / Into::<f64>::into(rounds);
+        Into::<f64>::into(self.cars_passed) / Into::<f64>::into(rounds)
     }
 }
 

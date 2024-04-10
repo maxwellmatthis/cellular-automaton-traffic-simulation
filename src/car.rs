@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 pub struct Car {
     max_speed: u8,
     last_speed: u8,
@@ -10,7 +12,7 @@ pub struct Car {
 
 impl Car {
     pub fn new(max_speed: u8, initial_speed: u8) -> Self {
-        return Self {
+        Self {
             max_speed,
             last_speed: initial_speed,
             speed: initial_speed,
@@ -22,34 +24,34 @@ impl Car {
     }
 
     pub fn speed(&self) -> u8 {
-        return self.speed;
+        self.speed
     }
 
     pub fn rounds(&self) -> u32 {
-        return self.rounds;
+        self.rounds
     }
 
     /// Returns the average number of cells driven per round.
     pub fn average_speed(&self) -> f64 {
-        return Into::<f64>::into(self.distance) / Into::<f64>::into(self.rounds);
+        Into::<f64>::into(self.distance) / Into::<f64>::into(self.rounds)
     }
 
     pub fn accelerations(&self) -> u32 {
-        return self.accelerations;
+        self.accelerations
     }
 
     pub fn deaccelerations(&self) -> u32 {
-        return self.deaccelerations;
+        self.deaccelerations
     }
 
     /// Records the current round
     pub fn record(&mut self) {
         self.rounds += 1;
         self.distance += Into::<u32>::into(self.speed());
-        if self.speed > self.last_speed {
-            self.accelerations += 1;
-        } else if self.speed < self.last_speed {
-            self.deaccelerations += 1;
+        match self.speed.cmp(&self.last_speed) {
+            Ordering::Greater => self.accelerations += 1,
+            Ordering::Less => self.deaccelerations += 1,
+            Ordering::Equal => ()
         }
         self.last_speed = self.speed;
     }

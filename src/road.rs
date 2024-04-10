@@ -36,7 +36,7 @@ impl Road {
             }
             cells.push(cell);
         }
-        return Self {
+        Self {
             rng,
             cells,
             max_speed,
@@ -52,11 +52,11 @@ impl Road {
 
     /// Returns `true` `probability * 100`% of the time.
     fn occurs(rng: &mut ThreadRng, probability: f32) -> bool {
-        return rng.gen::<f32>() <= probability;
+        rng.gen::<f32>() <= probability
     }
 
     pub fn max_speed(&self) -> u8 {
-        return self.max_speed;
+        self.max_speed
     }
 
     /// Returns the average number of cells driven per round.
@@ -69,7 +69,7 @@ impl Road {
                 sum += car.average_speed();
             }
         }
-        return sum / n_cars;
+        sum / n_cars
     }
 
     pub fn accelerations(&self) -> u32 {
@@ -79,7 +79,7 @@ impl Road {
                 sum += car.accelerations();
             }
         }
-        return sum;
+        sum
     }
 
     pub fn deaccelerations(&self) -> u32 {
@@ -89,33 +89,31 @@ impl Road {
                 sum += car.deaccelerations();
             }
         }
-        return sum;
+        sum
     }
 
     /// Returns the number of cars currently on the road.
     pub fn n_cars(&self) -> f64 {
-        return self.n_spawned_cars - self.n_removed_cars;
+        self.n_spawned_cars - self.n_removed_cars
     }
 
     // Provides read access to the road cells.
     pub fn cells(&self) -> &Vec<Cell> {
-        return &self.cells;
+        &self.cells
     }
 
     /// Simulates one round of the cellular automaton.
     pub fn round(&mut self) {
         self.rounds += 1;
-        if Self::occurs(&mut self.rng, self.spawn_car_at_entrance_probability) {
-            if let None = self.cells[0].car() {
-                self.cells[0].put_car(Car::new(self.max_speed, self.max_speed));
-                self.n_spawned_cars += 1.0;
-            }
+        if Self::occurs(&mut self.rng, self.spawn_car_at_entrance_probability) && self.cells[0].car().is_none() {
+            self.cells[0].put_car(Car::new(self.max_speed, self.max_speed));
+            self.n_spawned_cars += 1.0;
         }
 
         let mut cells_to_next_car = self.max_speed;
         // Prepare wrap-around look-ahead for last vehicles.
         for i in 0..cells_to_next_car {
-            if let Some(_) = self.cells[Into::<usize>::into(i)].car() {
+            if self.cells[Into::<usize>::into(i)].car().is_some() {
                 cells_to_next_car = i;
                 break;
             }
@@ -191,7 +189,7 @@ impl fmt::Display for Road {
                 road += "_"
             }
         }
-        return write!(f, "{}", road);
+        write!(f, "{}", road)
     }
 }
 

@@ -10,19 +10,19 @@ pub struct ImageDrawer {
 
 impl ImageDrawer {
     pub fn new(road: &Road, rounds: u32) -> Self {
-        return Self {
+        Self {
             image: RgbImage::new(TryInto::<u32>::try_into(road.cells().len()).unwrap(), rounds),
             current_row: rounds,
             max_speed: road.max_speed()
-        };
+        }
     }
 
     pub fn placeholder() -> Self {
-        return Self {
+        Self {
             image: RgbImage::new(0, 0),
             current_row: 0,
             max_speed: 0
-        };
+        }
     }
 
     pub fn add_snapshot(&mut self, road: &Road) {
@@ -50,7 +50,7 @@ impl ImageDrawer {
         } else {
             red = (255.0 * 2.0 * (1.0 - speed_norm)).floor() as u8;
         }
-        return Rgb([
+        Rgb([
             red,
             green,
             0
@@ -58,6 +58,6 @@ impl ImageDrawer {
     }
 
     pub fn save(&self, filepath: PathBuf) -> Result<(), ImageError> {
-        return self.image.save(filepath);
+        self.image.save(filepath)
     }
 }
