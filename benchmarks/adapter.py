@@ -67,15 +67,15 @@ def run(simulation_options: SimulationOptions):
     metrics = json.loads(output)
     return SimulationMetrics(metrics)
 
-def run_average(simulation_options: SimulationOptions, rounds: int = 10):
+def run_average(simulation_options: SimulationOptions, simulations: int):
     average_metrics: Optional[SimulationMetrics] = None
-    for r in range(rounds):
+    for r in range(simulations):
         metrics = run(simulation_options)
         if average_metrics == None:
             average_metrics = metrics
             continue
         average_metrics.add(metrics)
-    average_metrics.divide_all(rounds)
+    average_metrics.divide_all(simulations)
     return average_metrics
 
 

@@ -61,15 +61,17 @@ impl Road {
 
     /// Returns the average number of cells driven per round.
     pub fn average_speed(&self) -> f64 {
-        let mut n_cars: f64 = 0.0;
+        if self.n_spawned_cars == 0.0 {
+            panic!("Average speed does not exist for simulations that have not spawned any cars yet.");
+        }
+
         let mut sum: f64 = 0.0;
         for cell in &self.cells {
             if let Some(car) = cell.car() {
-                n_cars += 1.0;
                 sum += car.average_speed();
             }
         }
-        sum / n_cars
+        (self.removed_cars_average_speed_sum + sum) / (self.n_spawned_cars)
     }
 
     pub fn accelerations(&self) -> u32 {
