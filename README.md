@@ -43,8 +43,7 @@ when running the simulator from the command line (see usage below).
 
 The simulator can print the details of each round to stdout using the `-v` (verbose) switch and/or
 generate an image using the `-i` (image) switch.
-__Note:__ The number in parenthesis in front of every line in verbose mode is the number of vehicles on the
-road. In image mode cars are represented as pixels ranging from red (stopped) to green (max_speed).
+__Note:__ In image mode cars are represented as pixels ranging from red (stopped) to green (max_speed).
 Each row represents a round. The image is read from the bottom up.
 
 The simulator always ends the simulation by printing the its simulation relevant settings and useful
@@ -60,14 +59,10 @@ Options:
           The number of cells that make up the road [default: 1000]
   -m, --max-speed <MAX_SPEED>
           The maximum number of cells that a car can drive in a round [default: 5]
-      --place-car-probability <PLACE_CAR_PROBABILITY>
-          The probability with which the initial cars are placed [default: 0.5]
+      --traffic-density <TRAFFIC_DENSITY>
+          The density of traffic. Number of cars on the road are computed as `floor(traffic_density * road_length)` [default: 0.5]
       --dilly-dally-probability <DILLY_DALLY_PROBABILITY>
           The probability with which cars dilly-dally. (slow down randomly) [default: 0.2]
-      --spawn-car-at-entrance-probability <SPAWN_CAR_AT_ENTRANCE_PROBABILITY>
-          The probability with which a new car is spawned in the zeroth cell of the highway. Note: The cell must be clear [default: 0]
-      --remove-car-on-exit-probability <REMOVE_CAR_ON_EXIT_PROBABILITY>
-          The probability with which an existing car is removed when it passes the last cell of the highway. Colisions with cars in the first cells are ignored, unlike with the usual wrap-around [default: 0]
   -v, --verbose
           Whether to print the current road state to stdout
   -i, --image
@@ -101,7 +96,7 @@ from adapter import run_average, SimulationOptions
 from plot_helper import plot
 
 VARIABLE = "Max Speed"
-ROUNDS = 100
+SIMULATIONS_EACH = 100
 
 # x-axis
 max_speeds = np.arange(0, 9, 1)
@@ -113,17 +108,16 @@ accelerations = []
 deaccelerations = []
 
 for max_speed in max_speeds:
-    # Runs the simulator `ROUNDS` times for the current max_speed and averages the results.
-    metrics = run_average(SimulationOptions(max_speed=max_speed, place_car_probability=0.4, dilly_dally_probability=0.0), ROUNDS)
+    metrics = run_average(SimulationOptions(max_speed=max_speed, traffic_density=0.4, dilly_dally_probability=0.0), SIMULATIONS_EACH)
     average_speeds.append(metrics.average_speed__kilometers_per_hour)
     exit_cell_flows.append(metrics.exit_cell_flow__cars_per_minute)
     accelerations.append(metrics.accelerations)
     deaccelerations.append(metrics.deaccelerations)
 
-plot(VARIABLE, "Average Speed (km/h)", max_speeds, average_speeds, ROUNDS)
-plot(VARIABLE, "Exit Cell Flow (car/min)", max_speeds, exit_cell_flows, ROUNDS)
-plot(VARIABLE, "Accelerations", max_speeds, accelerations, ROUNDS)
-plot(VARIABLE, "Deaccelerations", max_speeds, deaccelerations, ROUNDS)
+plot(VARIABLE, "Average Speed (km/h)", dilly_dally_probabilities, average_speeds)
+plot(VARIABLE, "Exit Cell Flow (car/min)", dilly_dally_probabilities, exit_cell_flows)
+plot(VARIABLE, "Accelerations (n/car/round)", dilly_dally_probabilities, accelerations)
+plot(VARIABLE, "Deaccelerations (n/car/round)", dilly_dally_probabilities, deaccelerations)
 ```
 
 Here's an example of what a 2D plot looks like:

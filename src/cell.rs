@@ -22,15 +22,15 @@ impl Cell {
     }
 
     pub fn put_car(&mut self, car: Car) {
-        if car.speed() != 0 {
-            // Car must have moved, so its not the same car that
-            // occupied the cell before last `take_car` call.
-            self.cars_passed += 1;
-        }
         if self.car.is_some() {
             panic!("Cannot put car into a cell that already contains a car.");
         }
         self.car = Some(car);
+    }
+
+    /// Records that a car has passed the cell.
+    pub fn pass(&mut self) {
+        self.cars_passed += 1;
     }
 
     /// Returns the cars per round that have come by this cell.

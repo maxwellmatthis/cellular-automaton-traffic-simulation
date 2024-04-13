@@ -1,13 +1,14 @@
 use std::cmp::Ordering;
+use crate::flip_flop::FlipFlop;
 
 pub struct Car {
     max_speed: u8,
     last_speed: u8,
     speed: u8,
-    rounds: u32,
     distance: u32,
     accelerations: u32,
-    deaccelerations: u32
+    deaccelerations: u32,
+    overflow_flip_flop: FlipFlop
 }
 
 impl Car {
@@ -16,10 +17,10 @@ impl Car {
             max_speed,
             last_speed: initial_speed,
             speed: initial_speed,
-            rounds: 0,
             distance: 0,
             accelerations: 0,
-            deaccelerations: 0
+            deaccelerations: 0,
+            overflow_flip_flop: FlipFlop::new()
         }
     }
 
@@ -27,13 +28,8 @@ impl Car {
         self.speed
     }
 
-    pub fn rounds(&self) -> u32 {
-        self.rounds
-    }
-
-    /// Returns the average number of cells driven per round.
-    pub fn average_speed(&self) -> f64 {
-        Into::<f64>::into(self.distance) / Into::<f64>::into(self.rounds)
+    pub fn distance(&self) -> u32 {
+        self.distance
     }
 
     pub fn accelerations(&self) -> u32 {
@@ -43,11 +39,20 @@ impl Car {
     pub fn deaccelerations(&self) -> u32 {
         self.deaccelerations
     }
+    
+    /// Simulates one step for the car.
+    pub fn round(&mut self, cells_to_next_car: u8, dilly_dally: bool) {
+        self.increase_speed();
+        self.decrease_speed_to(cells_to_next_car);
+        if dilly_dally {
+            self.decrease_speed();
+        }
+        self.record();
+    }
 
     /// Records the current round
-    pub fn record(&mut self) {
-        self.rounds += 1;
-        self.distance += Into::<u32>::into(self.speed());
+    fn record(&mut self) {
+        self.distance += self.speed() as u32;
         match self.speed.cmp(&self.last_speed) {
             Ordering::Greater => self.accelerations += 1,
             Ordering::Less => self.deaccelerations += 1,
@@ -56,8 +61,12 @@ impl Car {
         self.last_speed = self.speed;
     }
 
+    pub fn flip_flop_sync(&mut self, other: &FlipFlop) -> bool {
+        self.overflow_flip_flop.sync(other)
+    }
+    
     /// Increases the speed by one if the maximum speed has not yet been reached.
-    pub fn increase_speed(&mut self) {
+    fn increase_speed(&mut self) {
         if self.speed == self.max_speed {
             return; 
         }
@@ -65,7 +74,7 @@ impl Car {
     }
 
     /// Decreases the speed by one if the car is not already stopped.
-    pub fn decrease_speed(&mut self) { 
+    fn decrease_speed(&mut self) { 
         if self.speed == 0 {
             return;
         }
@@ -75,7 +84,7 @@ impl Car {
     /// Decreases the speed by a specified amount.
     ///
     /// Note: `0 < to < current_speed`
-    pub fn decrease_speed_to(&mut self, to: u8) {
+    fn decrease_speed_to(&mut self, to: u8) {
         if self.speed < to {
             return;
         }

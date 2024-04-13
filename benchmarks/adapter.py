@@ -11,10 +11,8 @@ class SimulationOptions:
     rounds: Optional[int] = None
     length: Optional[int] = None
     max_speed: Optional[int] = None
-    place_car_probability: Optional[float] = None
+    traffic_density: Optional[float] = None
     dilly_dally_probability: Optional[float] = None
-    spawn_car_at_entrance_probability: Optional[float] = None
-    remove_car_on_exit_probability: Optional[float] = None
     img_out: Optional[str] = None
 
     def to_flags_and_vals(self):
@@ -30,16 +28,15 @@ class SimulationOptions:
 class SimulationMetrics:
     rounds: int
     max_speed: int
+    traffic_density: float
+    cars: int
     dilly_dally_probability: float
-    place_car_probability: float
-    spawn_car_at_entrance_probability: float
-    remove_car_on_exit_probability: float
 
-    runtime: float
+    runtime__s: float
     average_speed__kilometers_per_hour: float
     exit_cell_flow__cars_per_minute: float
-    accelerations: int
-    deaccelerations: int
+    average_accelerations__n_per_car_per_round: int
+    average_deaccelerations__n_per_car_per_round: int
 
     def __init__(self, json: str):
         for field in fields(self):
