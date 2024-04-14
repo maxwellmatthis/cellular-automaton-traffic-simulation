@@ -25,6 +25,8 @@ class SimulationOptions:
             val = getattr(self, field.name)
             if val == None:
                 continue
+            if type(val) is list:
+                val = ",".join(map(lambda v : str(v), val))
             flags_and_vals.extend([f"--{field.name.replace('_', '-')}", str(val)])
         return flags_and_vals
 
