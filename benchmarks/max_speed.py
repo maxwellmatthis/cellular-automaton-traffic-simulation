@@ -6,23 +6,23 @@ VARIABLE = "Max Speed"
 SIMULATIONS_EACH = 100
 
 # x-axis
-max_speeds = np.arange(0, 9, 1)
+max_speeds = np.arange(0, 10, 1)
 
 # y-axes
 average_speeds = []
-exit_cell_flows = []
+first_cell_flows = []
 accelerations = []
 deaccelerations = []
 
 for max_speed in max_speeds:
     metrics = run_average(SimulationOptions(max_speed=max_speed, traffic_density=0.4, dilly_dally_probability=0.0), SIMULATIONS_EACH)
-    average_speeds.append(metrics.average_speed__kilometers_per_hour)
-    exit_cell_flows.append(metrics.exit_cell_flow__cars_per_minute)
-    accelerations.append(metrics.accelerations)
-    deaccelerations.append(metrics.deaccelerations)
+    average_speeds.append(metrics.average_speed_kilometers_per_hour)
+    first_cell_flows.append(metrics.monitor_cells_flow_cars_per_minute[0])
+    accelerations.append(metrics.average_accelerations_n_per_car_per_round)
+    deaccelerations.append(metrics.average_deaccelerations_n_per_car_per_round)
 
-plot(VARIABLE, "Average Speed (km/h)", dilly_dally_probabilities, average_speeds)
-plot(VARIABLE, "Exit Cell Flow (car/min)", dilly_dally_probabilities, exit_cell_flows)
-plot(VARIABLE, "Accelerations (n/car/round)", dilly_dally_probabilities, accelerations)
-plot(VARIABLE, "Deaccelerations (n/car/round)", dilly_dally_probabilities, deaccelerations)
+plot(VARIABLE, "Average Speed (km/h)", max_speeds, average_speeds)
+plot(VARIABLE, "First Cell Flow (car/min)", max_speeds, first_cell_flows)
+plot(VARIABLE, "Accelerations (n/car/round)", max_speeds, accelerations)
+plot(VARIABLE, "Deaccelerations (n/car/round)", max_speeds, deaccelerations)
 

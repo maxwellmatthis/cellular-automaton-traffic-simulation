@@ -16,7 +16,7 @@ roundss_expanded = []
 
 # z-axes
 average_speeds = []
-exit_cell_flows = []
+first_cell_flows = []
 accelerations = []
 batch_times = []
 
@@ -27,7 +27,7 @@ def run_rounds(simulations_each: int):
 
     # z-axes
     l_average_speeds = []
-    l_exit_cell_flows = []
+    l_first_cell_flows = []
     l_accelerations = []
     l_batch_times = []
 
@@ -38,11 +38,11 @@ def run_rounds(simulations_each: int):
         start = time.time()
         metrics = run_average(SimulationOptions(rounds=rounds), simulations_each)
         l_batch_times.append(time.time() - start)
-        l_average_speeds.append(metrics.average_speed__kilometers_per_hour)
-        l_exit_cell_flows.append(metrics.exit_cell_flow__cars_per_minute)
-        l_accelerations.append(metrics.average_accelerations__n_per_car_per_round)
+        l_average_speeds.append(metrics.average_speed_kilometers_per_hour)
+        l_first_cell_flows.append(metrics.monitor_cells_flow_cars_per_minute[0])
+        l_accelerations.append(metrics.average_accelerations_n_per_car_per_round)
 
-    return (l_simulations_eachs_expanded, l_roundss_expanded, l_average_speeds, l_exit_cell_flows, l_accelerations, l_batch_times)
+    return (l_simulations_eachs_expanded, l_roundss_expanded, l_average_speeds, l_first_cell_flows, l_accelerations, l_batch_times)
 
 if __name__ == "__main__":
     with Pool(6) as p:
@@ -51,12 +51,12 @@ if __name__ == "__main__":
             roundss_expanded.extend(rounds_result[1])
 
             average_speeds.extend(rounds_result[2])
-            exit_cell_flows.extend(rounds_result[3])
+            first_cell_flows.extend(rounds_result[3])
             accelerations.extend(rounds_result[4])
             batch_times.extend(rounds_result[5])
 
     plot_3d(VARIABLE_X, VARIABLE_Y, "Average Speed (km/h)", simulations_eachs_expanded, roundss_expanded, average_speeds)
-    plot_3d(VARIABLE_X, VARIABLE_Y, "Exit Cell Flow (car/min)", simulations_eachs_expanded, roundss_expanded, exit_cell_flows)
+    plot_3d(VARIABLE_X, VARIABLE_Y, "First Cell Flow (car/min)", simulations_eachs_expanded, roundss_expanded, first_cell_flows)
     plot_3d(VARIABLE_X, VARIABLE_Y, "Accelerations (n/car/round)", simulations_eachs_expanded, roundss_expanded, accelerations)
-    plot_3d(VARIABLE_X, VARIABLE_Y, "Batch Time", simulations_eachs_expanded, roundss_expanded, batch_times)
+    plot_3d(VARIABLE_X, VARIABLE_Y, "Batch Time (s)", simulations_eachs_expanded, roundss_expanded, batch_times)
 

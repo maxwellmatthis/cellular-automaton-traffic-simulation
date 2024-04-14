@@ -59,10 +59,12 @@ Options:
           The number of cells that make up the road [default: 1000]
   -m, --max-speed <MAX_SPEED>
           The maximum number of cells that a car can drive in a round [default: 5]
-      --traffic-density <TRAFFIC_DENSITY>
+  -t, --traffic-density <TRAFFIC_DENSITY>
           The density of traffic. Number of cars on the road are computed as `floor(traffic_density * road_length)` [default: 0.5]
-      --dilly-dally-probability <DILLY_DALLY_PROBABILITY>
+  -d, --dilly-dally-probability <DILLY_DALLY_PROBABILITY>
           The probability with which cars dilly-dally. (slow down randomly) [default: 0.2]
+      --monitor <MONITOR>
+          The indexes of the cells that are to be monitored. (Note: Although all cells are always monitored, only the cells you specify here will be included in the simulation metrics at the end on the simulation.) [default: 0]
   -v, --verbose
           Whether to print the current road state to stdout
   -i, --image
@@ -99,27 +101,26 @@ VARIABLE = "Max Speed"
 SIMULATIONS_EACH = 100
 
 # x-axis
-max_speeds = np.arange(0, 9, 1)
+max_speeds = np.arange(0, 10, 1)
 
 # y-axes
 average_speeds = []
-exit_cell_flows = []
+first_cell_flows = []
 accelerations = []
 deaccelerations = []
 
 for max_speed in max_speeds:
     metrics = run_average(SimulationOptions(max_speed=max_speed, traffic_density=0.4, dilly_dally_probability=0.0), SIMULATIONS_EACH)
-    average_speeds.append(metrics.average_speed__kilometers_per_hour)
-    exit_cell_flows.append(metrics.exit_cell_flow__cars_per_minute)
-    accelerations.append(metrics.accelerations)
-    deaccelerations.append(metrics.deaccelerations)
+    average_speeds.append(metrics.average_speed_kilometers_per_hour)
+    first_cell_flows.append(metrics.monitor_cells_flow_cars_per_minute[0])
+    accelerations.append(metrics.average_accelerations_n_per_car_per_round)
+    deaccelerations.append(metrics.average_deaccelerations_n_per_car_per_round)
 
-plot(VARIABLE, "Average Speed (km/h)", dilly_dally_probabilities, average_speeds)
-plot(VARIABLE, "Exit Cell Flow (car/min)", dilly_dally_probabilities, exit_cell_flows)
-plot(VARIABLE, "Accelerations (n/car/round)", dilly_dally_probabilities, accelerations)
-plot(VARIABLE, "Deaccelerations (n/car/round)", dilly_dally_probabilities, deaccelerations)
+plot(VARIABLE, "Average Speed (km/h)", max_speeds, average_speeds)
+plot(VARIABLE, "First Cell Flow (car/min)", max_speeds, first_cell_flows)
+plot(VARIABLE, "Accelerations (n/car/round)", max_speeds, accelerations)
+plot(VARIABLE, "Deaccelerations (n/car/round)", max_speeds, deaccelerations)
 ```
 
-Here's an example of what a 2D plot looks like:
+The results from all benchmarks are stored in [benchmarks/results/](./benchmarks/results/).
 
-![Max_Speed:Exit_Cell_Flow_(car:min)_(100_rounds_each)](https://github.com/maxwellmatthis/cellular-automaton-traffic-simulation/assets/58150536/19253a33-7866-42ef-a9a4-486a57d4866e)

@@ -10,19 +10,19 @@ dilly_dally_probabilities = np.arange(0, 1, 0.05)
 
 # y-axes
 average_speeds = []
-exit_cell_flows = []
+first_cell_flows = []
 accelerations = []
 deaccelerations = []
 
 for dilly_dally_probability in dilly_dally_probabilities:
     metrics = run_average(SimulationOptions(traffic_density=0.3, dilly_dally_probability=dilly_dally_probability), SIMULATIONS_EACH)
-    average_speeds.append(metrics.average_speed__kilometers_per_hour)
-    exit_cell_flows.append(metrics.exit_cell_flow__cars_per_minute)
-    accelerations.append(metrics.average_accelerations__n_per_car_per_round)
-    deaccelerations.append(metrics.average_accelerations__n_per_car_per_round)
+    average_speeds.append(metrics.average_speed_kilometers_per_hour)
+    first_cell_flows.append(metrics.monitor_cells_flow_cars_per_minute[0])
+    accelerations.append(metrics.average_accelerations_n_per_car_per_round)
+    deaccelerations.append(metrics.average_accelerations_n_per_car_per_round)
 
 plot(VARIABLE, "Average Speed (km/h)", dilly_dally_probabilities, average_speeds)
-plot(VARIABLE, "Exit Cell Flow (car/min)", dilly_dally_probabilities, exit_cell_flows)
+plot(VARIABLE, "First Cell Flow (car/min)", dilly_dally_probabilities, first_cell_flows)
 plot(VARIABLE, "Accelerations (n/car/round)", dilly_dally_probabilities, accelerations)
 plot(VARIABLE, "Deaccelerations (n/car/round)", dilly_dally_probabilities, deaccelerations)
 

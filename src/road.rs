@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{cmp, fmt};
 use rand::prelude::*;
 use crate::cell::Cell;
 use crate::car::Car;
@@ -32,15 +32,17 @@ impl Road {
         let mut cells = Vec::<Cell>::with_capacity(length as usize);
         let cars = (traffic_density * length as f32).floor() as u32;
 
+        for _ in 0..length as usize {
+            cells.push(Cell::new());
+        }
         let mut spawned_cars: u32 = 0;
         let mut index: usize = 0;
         while spawned_cars < cars {
-            let mut cell = Cell::new();
-            if Self::occurs(&mut rng, traffic_density) {
+            let cell = &mut cells[index];
+            if Self::occurs(&mut rng, traffic_density) && cell.car().is_none() {
                 spawned_cars += 1;
                 cell.put_car(Car::new(max_speed, 0));
             }
-            cells.push(cell);
             index = (index + 1) % cells.len();
         }
         Self {
@@ -113,9 +115,9 @@ impl Road {
 
         let mut cells_to_next_car = self.max_speed();
         // Prepare wrap-around look-ahead for last vehicles.
-        for i in 0..cells_to_next_car {
-            if self.cells[i as usize].car().is_some() {
-                cells_to_next_car = i;
+        for i in 0..cmp::min(self.cells().len(), cells_to_next_car as usize) {
+            if self.cells[i].car().is_some() {
+                cells_to_next_car = i as u8;
                 break;
             }
         }
