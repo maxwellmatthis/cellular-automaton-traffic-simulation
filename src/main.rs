@@ -21,7 +21,11 @@ pub struct Args {
     #[arg(short, long, default_value_t = 4096)]
     rounds: u32,
 
-    /// The number of cells that make up the road.
+    /// The number of lanes that make up the road.
+    #[arg(long, default_value_t = 1)]
+    lanes: u32,
+
+    /// The number of cells in each lane that make up the road.
     #[arg(short, long, default_value_t = 1000)]
     length: u32,
 
@@ -87,6 +91,7 @@ impl SimulationResult {
 pub fn run_sim(args: Args) -> SimulationResult {
     let start = Instant::now();
     let mut road = Road::new(
+        args.lanes,
         args.length,
         args.max_speed,
         args.traffic_density,
@@ -110,11 +115,12 @@ pub fn run_sim(args: Args) -> SimulationResult {
 
     if args.image { image_drawer.save(args.out_path).unwrap(); }
 
+    // TODO: allow monitors for all lanes
     let flows_cars_per_minute: Vec<f64> = args.monitor
         .iter()
         .map(|i| *i as usize)
         .filter(|i| i < &road.cells().len())
-        .map(|i| road.cells()[i].flow(args.rounds) / ROUND_S * 60.0)
+        .map(|i| road.cells()[0][i].flow(args.rounds) / ROUND_S * 60.0)
         .collect();
     SimulationResult {
         // Settings
@@ -143,6 +149,7 @@ mod tests {
     fn no_road() {
         let result = run_sim(Args {
             rounds: 100,
+            lanes: 0,
             length: 0,
             max_speed: 5,
             traffic_density: 0.5,
@@ -162,12 +169,13 @@ mod tests {
     fn default_simulation() {
         let result = run_sim(Args {
             rounds: 4096,
+            lanes: 1,
             length: 1000,
             max_speed: 5,
             traffic_density: 0.5,
             dilly_dally_probability: 0.2,
             monitor: vec![0, 500, 999],
-            verbose: false,
+            verbose: true,
             image: false,
             out_path: PathBuf::new()
         });
@@ -179,6 +187,7 @@ mod tests {
     fn one_car() {
         let result = run_sim(Args {
             rounds: 10,
+            lanes: 1,
             length: 10,
             max_speed: 5,
             traffic_density: 0.1,

@@ -24,22 +24,26 @@ impl Car {
         }
     }
 
+    /// Returns the speed in cells per round. (`1cell/round = 7.5m/s`)
     pub fn speed(&self) -> u8 {
         self.speed
     }
 
+    /// Returns the distance in cells. (`1cell = 7.5m`)
     pub fn distance(&self) -> u32 {
         self.distance
     }
 
+    /// Returns the number of rounds that the speed has increased compared to the last round.
     pub fn accelerations(&self) -> u32 {
         self.accelerations
     }
 
+    /// Returns the number of rounds that the speed has decreased compared to the last round.
     pub fn deaccelerations(&self) -> u32 {
         self.deaccelerations
     }
-    
+
     /// Simulates one step for the car.
     pub fn round(&mut self, cells_to_next_car: u8, dilly_dally: bool) {
         self.increase_speed();

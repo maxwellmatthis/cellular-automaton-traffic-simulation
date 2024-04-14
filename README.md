@@ -2,6 +2,23 @@
 
 A primarily one-dimensional cellular automaton for traffic simulation based on the Nagel-Schreckenberg model. (See: [Nagel-Schreckenberg model (Wikipedia/DE)](https://en.wikipedia.org/wiki/Nagel–Schreckenberg_model), [Nagel-Schreckenberg-Modell (Wikipedia/DE)](https://de.wikipedia.org/wiki/Nagel-Schreckenberg-Modell))
 
+## Model
+
+- The road is a closed loop, which means that the number of cars is constant and driving forever is possible.
+- The road is a made up of cells, where each cell may contain exactly one or no car.
+- Cars are `7.5m` long. => Each cell is `7.5m` long.
+- Each round is 1s long.
+- Cars can move a natural number of cells (equal to their speed) each round. => Cars move at `n * 7.5m/s` (`n * 27km/h`).
+- The default maximum speed is set to `5cells/round`, although it can be set to any number. (Note: It does not make sense to set the maximum speed any higher than `10cells/round` (`10 * 27km/h => 270km/h`) since there are almost no cars that can reach and almost no drivers willing to pay for the gasoline needed to sustain such speeds.)
+
+__Update Rules:__
+
+The following steps are executed in order for each car each round.
+
+1. Increase speed by `7.5m/s`.
+2. Decrease speed to `cells_to_next_car * 7.5m/s`.
+3. Decrease speed by `7.5m/s` with a chance of `dilly_dally_probability`.
+
 ## Installation & Setup
 
 ### Simulator
@@ -55,8 +72,10 @@ Usage: cellular-automaton-traffic-simulation [OPTIONS]
 Options:
   -r, --rounds <ROUNDS>
           The number of rounds to run the simulation for [default: 4096]
+      --lanes <LANES>
+          The number of lanes that make up the road [default: 1]
   -l, --length <LENGTH>
-          The number of cells that make up the road [default: 1000]
+          The number of cells in each lane that make up the road [default: 1000]
   -m, --max-speed <MAX_SPEED>
           The maximum number of cells that a car can drive in a round [default: 5]
   -t, --traffic-density <TRAFFIC_DENSITY>

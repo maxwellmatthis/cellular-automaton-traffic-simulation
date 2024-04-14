@@ -2,18 +2,25 @@ use std::path::PathBuf;
 use crate::Road;
 use image::{ImageError, Rgb, RgbImage};
 
+const SEPERATOR_COLOR: Rgb<u8> = Rgb([90, 90, 90]); // Rgb([255, 255, 255]);
+
 pub struct ImageDrawer {
     image: RgbImage,
     current_row: u32,
     max_speed: u8,
+    seperator: bool
 }
 
 impl ImageDrawer {
     pub fn new(road: &Road, rounds: u32) -> Self {
+        let seperator = road.lanes() > 1;
+        let round_height = road.lanes() + if seperator { 1 } else { 0 };
+        let height = round_height * rounds;
         Self {
-            image: RgbImage::new(TryInto::<u32>::try_into(road.cells().len()).unwrap(), rounds),
-            current_row: rounds,
-            max_speed: road.max_speed()
+            image: RgbImage::new(road.length(), height),
+            current_row: height,
+            max_speed: road.max_speed(),
+            seperator
         }
     }
 
@@ -21,7 +28,8 @@ impl ImageDrawer {
         Self {
             image: RgbImage::new(0, 0),
             current_row: 0,
-            max_speed: 0
+            max_speed: 0,
+            seperator: false
         }
     }
 
@@ -29,14 +37,22 @@ impl ImageDrawer {
         if self.current_row == 0 {
             panic!("Image is already full.");
         }
-        self.current_row -= 1;
-        for (x, cell) in road.cells().iter().enumerate() {
-            if let Some(car) = cell.car() {
-                self.image.put_pixel(
-                    TryInto::<u32>::try_into(x).unwrap(),
-                    self.current_row,
-                    self.get_color(car.speed())
-                );
+        for lane in road.cells() {
+            self.current_row -= 1;
+            for (x, cell) in lane.iter().enumerate() {
+                if let Some(car) = cell.car() {
+                    self.image.put_pixel(
+                        TryInto::<u32>::try_into(x).unwrap(),
+                        self.current_row,
+                        self.get_color(car.speed())
+                    );
+                }
+            }
+        }
+        if self.seperator {
+            self.current_row -= 1;
+            for x in 0..self.image.width() {
+                self.image.put_pixel(x, self.current_row, SEPERATOR_COLOR);
             }
         }
     }

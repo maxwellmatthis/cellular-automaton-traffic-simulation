@@ -8,6 +8,7 @@ BINARY = "target/release/cellular-automaton-traffic-simulation"
 
 @dataclass
 class SimulationOptions:
+    lanes: Optional[int] = None
     rounds: Optional[int] = None
     length: Optional[int] = None
     max_speed: Optional[int] = None
@@ -33,6 +34,7 @@ class SimulationOptions:
 @dataclass
 class SimulationResult:
     rounds: int
+    lanes: int
     length: int
     max_speed: int
     traffic_density: float
