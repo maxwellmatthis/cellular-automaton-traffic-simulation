@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use crate::flip_flop::FlipFlop;
 
+#[derive(Debug)]
 pub struct Car {
     max_speed: u8,
     last_speed: u8,
@@ -29,6 +30,19 @@ impl Car {
         self.speed
     }
 
+    /// Converts the speed to an RGB color based on the percentage of the max speed.
+    pub fn speed_rgb(&self) -> [u8; 3] {
+        let speed_norm: f32 = Into::<f32>::into(self.speed()) / Into::<f32>::into(self.max_speed);
+        let mut red = 255;
+        let mut green = 255;
+        if speed_norm <= 0.5 {
+            green = (255.0 * 2.0 * speed_norm).floor() as u8;
+        } else {
+            red = (255.0 * 2.0 * (1.0 - speed_norm)).floor() as u8;
+        }
+        [red, green, 0]
+    }
+
     /// Returns the distance in cells. (`1cell = 7.5m`)
     pub fn distance(&self) -> u32 {
         self.distance
@@ -44,9 +58,8 @@ impl Car {
         self.deaccelerations
     }
 
-    /// Simulates one step for the car.
-    pub fn round(&mut self, cells_to_next_car: u8, dilly_dally: bool) {
-        self.increase_speed();
+    /// Finishes the simulation round for the car. (breaking and recording)
+    pub fn finish(&mut self, cells_to_next_car: u8, dilly_dally: bool) {
         self.decrease_speed_to(cells_to_next_car);
         if dilly_dally {
             self.decrease_speed();
@@ -65,12 +78,12 @@ impl Car {
         self.last_speed = self.speed;
     }
 
-    pub fn flip_flop_sync(&mut self, other: &FlipFlop) -> bool {
-        self.overflow_flip_flop.sync(other)
+    pub fn flip_flop_unsync(&mut self, other: &FlipFlop) -> bool {
+        self.overflow_flip_flop.unsync(other)
     }
     
     /// Increases the speed by one if the maximum speed has not yet been reached.
-    fn increase_speed(&mut self) {
+    pub fn increase_speed(&mut self) {
         if self.speed == self.max_speed {
             return; 
         }

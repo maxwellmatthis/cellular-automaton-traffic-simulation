@@ -1,5 +1,6 @@
 use crate::car::Car;
 
+#[derive(Debug)]
 pub struct Cell {
     car: Option<Car>,
     cars_passed: i32

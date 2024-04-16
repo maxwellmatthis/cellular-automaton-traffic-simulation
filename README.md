@@ -4,6 +4,8 @@ A primarily one-dimensional cellular automaton for traffic simulation based on t
 
 ## Model
 
+### Basics
+
 - The road is a closed loop, which means that the number of cars is constant and driving forever is possible.
 - The road is a made up of cells, where each cell may contain exactly one or no car.
 - Cars are `7.5m` long. => Each cell is `7.5m` long.
@@ -11,13 +13,80 @@ A primarily one-dimensional cellular automaton for traffic simulation based on t
 - Cars can move a natural number of cells (equal to their speed) each round. => Cars move at `n * 7.5m/s` (`n * 27km/h`).
 - The default maximum speed is set to `5cells/round`, although it can be set to any number. (Note: It does not make sense to set the maximum speed any higher than `10cells/round` (`10 * 27km/h => 270km/h`) since there are almost no cars that can reach and almost no drivers willing to pay for the gasoline needed to sustain such speeds.)
 
-__Update Rules:__
+### Update Rules
 
 The following steps are executed in order for each car each round.
 
 1. Increase speed by `7.5m/s`.
 2. Decrease speed to `cells_to_next_car * 7.5m/s`.
 3. Decrease speed by `7.5m/s` with a chance of `dilly_dally_probability`.
+
+### Multi-Lane Extension
+
+- Cars can only switch to adjacent lanes.
+- Switching is only allowed if there is no one (1) directly in front of or (2) next to the car. Exception: Switching is with a car directly in front is allowed for cars moving at `1cell/round`.
+- Passing directly on the right is not allowed.
+- Cars that switch lanes do not dilly-dally. (This avoids cars going sideways by switching lanes at `v=0cells/round` and break checking people behind them.)
+
+- Cars always switch to the right lane if there is enough space (speed + 1 cells) for them to drive without slowing down.
+- Cars always switch to the lane with the most space if none of the lanes have enough space to drive without slowing down.
+
+Since all cars theoretically move at the same time but it is very hard to make the computer
+simulate all cars at the same time, the cars are simulated lane-by-lane, starting on the left.
+This functions without hard-to-resolve conflicts, because passing on the right is not allowed.
+
+__Examples:__
+
+The following examples show the options and behaviour of the red car (`v=5cells/round`) for one round. The columns represent lanes 1-4.
+
+(Legend: 🚙 : other car, ❌ : not allowed, ✅ : allowed, 🎯 : where the car will move to)
+
+| 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- |
+|❌ |🚙 |❌ |🚙 |
+|❌ |🚙 |❌ |🚙 |
+|❌ |🚙 |❌ |❌ |
+|❌ |🚙 |❌ |❌ |
+|❌ |🚙 |❌ |❌ |
+|❌ |🚗 |❌ |❌ |
+
+| 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- |
+|🎯 |🚙 |🚙 |🚙 |
+|✅ |🚙 |🚙 |🚙 |
+|✅ |❌ |❌ |❌ |
+|✅ |🚙 |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|❌ |🚗 |❌ |❌ |
+
+| 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- |
+|❌ |🚙 |🚙 |🚙 |
+|❌ |🚙 |🎯 |❌ |
+|❌ |✅ |✅ |❌ |
+|🚙 |🚗 |✅ |❌ |
+|❌ |❌ |🚙 |❌ |
+
+| 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- |
+|❌ |❌ |🚙 |❌ |
+|❌ |❌ |❌ |❌ |
+|✅ |✅ |🎯 |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|❌ |🚗 |❌ |❌ |
+
+| 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- |
+|❌ |❌ |🚙 |❌ |
+|✅ |🎯 |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|❌ |🚗 |❌ |❌ |
 
 ## Installation & Setup
 
@@ -85,7 +154,9 @@ Options:
       --monitor <MONITOR>
           The indexes of the cells that are to be monitored. (Note: Although all cells are always monitored, only the cells you specify here will be included in the simulation metrics at the end on the simulation.) [default: 0]
   -v, --verbose
-          Whether to print the current road state to stdout
+          Whether to print the states of the road to stdout
+  -a, --animate
+          Whether to print the states of the road to stdout using color and overwriting for greater viewing pleasure. This option trumps the `verbose` option
   -i, --image
           Whether to create a visualization image of the simulation
   -o, --out-path <OUT_PATH>

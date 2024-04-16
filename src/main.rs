@@ -1,9 +1,12 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use std::path::PathBuf;
+use std::thread;
 use road::Road;
 use image_drawer::ImageDrawer;
 use clap::Parser;
 use serde::Serialize;
+use std::io::{Write, stdout};
+use crossterm::{QueueableCommand, cursor, terminal, ExecutableCommand};
 
 mod road;
 mod cell;
@@ -47,10 +50,15 @@ pub struct Args {
     #[arg(long, value_delimiter = ',', default_value = "0")]
     monitor: Vec<u32>,
 
-    /// Whether to print the current road state to stdout.
+    /// Whether to print the states of the road to stdout.
     #[arg(short, long, default_value_t = false)]
     verbose: bool,
 
+    /// Whether to print the states of the road to stdout using color and overwriting for greater
+    /// viewing pleasure. This option trumps the `verbose` option.
+    #[arg(short, long, default_value_t = false)]
+    animate: bool,
+ 
     /// Whether to create a visualization image of the simulation.
     #[arg(short, long, default_value_t = false)]
     image: bool,
@@ -89,6 +97,7 @@ impl SimulationResult {
 }
 
 pub fn run_sim(args: Args) -> SimulationResult {
+    // setup
     let start = Instant::now();
     let mut road = Road::new(
         args.lanes,
@@ -97,22 +106,37 @@ pub fn run_sim(args: Args) -> SimulationResult {
         args.traffic_density,
         args.dilly_dally_probability,
     );
-    if args.verbose { println!("{}", road); }
 
+    // setup outputs
+    if !args.animate && args.verbose { println!("{}", road); }
+    let mut stdout = stdout();
+    if args.animate { stdout.execute(cursor::Hide).unwrap(); }
     let mut image_drawer = if args.image {
         ImageDrawer::new(&road, args.rounds + 1)
     } else {
         ImageDrawer::placeholder()
     };
-    if args.image { image_drawer.add_snapshot(&road); }
+    if args.image { image_drawer.take_snapshot(&road); }
 
     // run simulator
     for _ in 0..args.rounds {
         road.round();
-        if args.verbose { println!("{}", road); }
-        if args.image { image_drawer.add_snapshot(&road); }
+        if args.animate {
+            stdout.queue(cursor::SavePosition).unwrap();
+            stdout.write_all(format!("{}", road).as_bytes()).unwrap();
+            stdout.queue(cursor::RestorePosition).unwrap();
+            stdout.flush().unwrap();
+            thread::sleep(Duration::from_millis(200));
+            stdout.queue(cursor::RestorePosition).unwrap();
+            stdout.queue(terminal::Clear(terminal::ClearType::FromCursorDown)).unwrap();
+        } else if args.verbose {
+            println!("{}", road);
+        }
+        if args.image { image_drawer.take_snapshot(&road); }
     }
-
+    // clean-up
+    if args.animate { println!("{}", road); }
+    stdout.execute(cursor::Show).unwrap();
     if args.image { image_drawer.save(args.out_path).unwrap(); }
 
     // TODO: allow monitors for all lanes
@@ -155,8 +179,9 @@ mod tests {
             traffic_density: 0.5,
             dilly_dally_probability: 0.2,
             monitor: vec![0, 100],
-            verbose: false,
+            verbose: true,
             image: false,
+            animate: false,
             out_path: PathBuf::new()
         });
 
@@ -177,6 +202,7 @@ mod tests {
             monitor: vec![0, 500, 999],
             verbose: true,
             image: false,
+            animate: false,
             out_path: PathBuf::new()
         });
 
@@ -193,8 +219,9 @@ mod tests {
             traffic_density: 0.1,
             dilly_dally_probability: 0.0,
             monitor: vec![0, 500, 999],
-            verbose: false,
+            verbose: true,
             image: false,
+            animate: false,
             out_path: PathBuf::new()
         });
 
