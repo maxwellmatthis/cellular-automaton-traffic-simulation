@@ -110,6 +110,7 @@ pub fn run_sim(args: Args) -> SimulationResult {
     // setup outputs
     if !args.animate && args.verbose { println!("{}", road); }
     let mut stdout = stdout();
+    stdout.execute(cursor::Show).unwrap();
     if args.animate { stdout.execute(cursor::Hide).unwrap(); }
     let mut image_drawer = if args.image {
         ImageDrawer::new(&road, args.rounds + 1)
@@ -130,13 +131,15 @@ pub fn run_sim(args: Args) -> SimulationResult {
             stdout.queue(cursor::RestorePosition).unwrap();
             stdout.queue(terminal::Clear(terminal::ClearType::FromCursorDown)).unwrap();
         } else if args.verbose {
-            println!("{}", road);
+            println!("\n{}", road);
         }
         if args.image { image_drawer.take_snapshot(&road); }
     }
     // clean-up
-    if args.animate { println!("{}", road); }
-    stdout.execute(cursor::Show).unwrap();
+    if args.animate {
+        stdout.execute(cursor::Show).unwrap();
+        println!("{}", road);
+    }
     if args.image { image_drawer.save(args.out_path).unwrap(); }
 
     // TODO: allow monitors for all lanes

@@ -70,8 +70,8 @@ impl Road {
         let mut rng = thread_rng();
         let n_lanes = lanes;
         let mut lanes = Vec::<Vec<Cell>>::with_capacity(n_lanes as usize);
-        let mut cells_to_next_cars: Vec<u8> = vec![0; n_lanes as usize];
-        let cars_per_lane = (traffic_density * length as f32).floor() as u32;
+        let mut cells_to_next_cars = vec![255u8; n_lanes as usize];
+        let cars_per_lane = (traffic_density * length as f32).round() as u32;
 
         #[allow(clippy::needless_range_loop)] // since the number of iterations is most important
         for lane_i in 0..n_lanes as usize {
@@ -82,16 +82,14 @@ impl Road {
 
             let mut spawned_cars: u32 = 0;
             let mut index: usize = 0;
-            let mut set_cells_to_next_car = false;
             while spawned_cars < cars_per_lane {
                 let cell = &mut lane[index];
                 if Self::occurs(&mut rng, traffic_density) && cell.car().is_none() {
-                    if !set_cells_to_next_car {
-                        set_cells_to_next_car = false;
+                    if index < cells_to_next_cars[lane_i] as usize {
                         cells_to_next_cars[lane_i] = TryInto::<u8>::try_into(index).unwrap_or(255);
                     }
                     spawned_cars += 1;
-                    cell.put_car(Car::new(max_speed, 0));
+                    cell.put_car(Car::new(max_speed, 0)).unwrap();
                 }
                 index = (index + 1) % lane.len();
             }
@@ -176,40 +174,59 @@ impl Road {
         sum as f64 / self.cars as f64 / self.rounds as f64
     }
 
+    fn prepare_cells_to_next_cars_for_wrap_around(&mut self) {
+        for (lane_i, lane) in self.lanes.iter().enumerate() {
+            'cells: for cell_i in 0u8..cmp::min(self.length(), 255) as u8 {
+                if let Some(_car) = lane[cell_i as usize].car() {
+                    self.cells_to_next_cars[lane_i] = cell_i;
+                    break 'cells;
+                }
+            }
+        }
+    }
+
+    fn check_sides_clear(&self, lane_index: usize, cell_index: usize) -> (bool, bool) {
+        let not_in_leftmost_lane = lane_index > 0;
+        let not_in_rightmost_lane = lane_index + 1 != self.lanes.len();
+        let left_clear = not_in_leftmost_lane && self.lanes[lane_index - 1][cell_index].car().is_none();
+        let right_clear = not_in_rightmost_lane && self.lanes[lane_index + 1][cell_index].car().is_none();
+        (left_clear, right_clear)
+    }
+
     /// Simulates one round of the cellular automaton.
     pub fn round(&mut self) {
         self.rounds += 1;
 
-        // Iterate over cars in reverse to avoid having to look ahead each time.
         let length = self.length() as usize;
+        let n_lanes = self.lanes.len();
 
+        self.prepare_cells_to_next_cars_for_wrap_around();
+
+        // Iterate over cars in reverse to avoid having to look ahead each time.
         for rev_i in 1..=length {
             let cell_i = length - rev_i;
-            for lane_i in 0..self.lanes.len() {
-                // Check sides for lane switching before borrowing &mut self.lanes to work on car.
-                let not_in_leftmost_lane = lane_i > 0;
-                let not_in_rightmost_lane = lane_i + 1 != self.lanes.len();
-                let left_clear = not_in_leftmost_lane && self.lanes[lane_i - 1][cell_i].car().is_none();
-                let right_clear = not_in_rightmost_lane && self.lanes[lane_i + 1][cell_i].car().is_none();
-
+            for lane_i in 0..n_lanes {
+                let (left_clear, right_clear) = self.check_sides_clear(lane_i, cell_i);
                 let lane = &mut self.lanes[lane_i];
                 let car = lane[cell_i].take_car();
                 match car {
                     Some(mut car) => {
                         if !car.flip_flop_unsync(&self.overflow_flip_flop) {
-                            // Car has already been moved.
-                            // This is likely due to a wrap-around.
+                            // Car has already been moved. This is due to a wrap-around.
                             self.cells_to_next_cars[lane_i] = 0;
-                            lane[cell_i].put_car(car);
+                            lane[cell_i].put_car(car).unwrap();
                             continue;
                         }
 
+                        // -- calculate movement and update car --
                         car.increase_speed();
                         let best_switch: LaneSwitch = self.determine_best_lane(lane_i, car.speed(), left_clear, right_clear);
-                        car.finish(best_switch.driveable(), !best_switch.is_switch() && Self::occurs(&mut self.rng, self.dilly_dally_probability));
+                        let is_switch = best_switch.is_switch();
+                        car.finish(best_switch.driveable(), !is_switch && Self::occurs(&mut self.rng, self.dilly_dally_probability));
                         self.cells_to_next_cars[lane_i] = 0;
 
-                        if car.speed() > 1 {
+                        // -- place car into new cell and record cell passage --
+                        if is_switch && car.speed() > 1 {
                             self.lanes[lane_i][(cell_i + 1) % length].pass();
                         }
                         let target_i = cell_i + car.speed() as usize;
@@ -218,12 +235,20 @@ impl Road {
                         for passed_cell_i in (cell_i + 1)..=target_i {
                             target_lane[passed_cell_i % length].pass();
                         }
-                        if target_i > cell_i {
-                            // `car.speed()` cannot be `<1` because `target_i` would not be
-                            // greater than `cell_i` if the car was stopped.
+                        if is_switch && car.speed() > 0 {
                             self.cells_to_next_cars[target_lane_i] = car.speed() - 1;
                         }
-                        target_lane[target_i % length].put_car(car);
+                        if let Err(car) = target_lane[target_i % length].put_car(car) {
+                            panic!(
+                                "FATAL: Cannot put car into a cell that already contains a car!\nDEBUG INFO:\n  Round: {}\n  Car: {}:{} (lane_index:cell_index)\n  Speed: {}\n  Cells to next cars by lane: {:?}\n  LaneSwitch: {:?}\n    Target: {}:{} (lane_index:cell_index)",
+                                self.rounds,
+                                lane_i, cell_i,
+                                car.speed(),
+                                self.cells_to_next_cars,
+                                best_switch,
+                                target_lane_i, target_i % length
+                            );
+                        }
                     }
                     None => {
                         let cells_to_next_car = self.cells_to_next_cars[lane_i];
@@ -236,7 +261,7 @@ impl Road {
                 }
             }
         }
-        // Flip the flop to keep track of the current round.
+        // Flip the flop to keep track of which cars have already been moved in a round.
         self.overflow_flip_flop.flip_flop();
     }
 
@@ -259,7 +284,7 @@ impl Road {
             };
 
             // Required because lanes that have already incremented their distance
-            // counters one closer when switching lanes.
+            // counters are one cell closer when switching lanes.
             if target_lane_offset < 0 && distance > 0 {
                 distance -= 1 
             }
@@ -290,8 +315,21 @@ impl Road {
 
 impl fmt::Display for Road {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut road = String::with_capacity(self.lanes.len() * self.length as usize);
-        for lane in self.cells() {
+        let mut road = String::with_capacity((self.lanes.len() + 1) * (self.length + 3) as usize);
+        let colored_digits: Vec<String> = (0..10).map(|n| format!("{}",
+            n.to_string().truecolor(
+                ((1.0 - n as f32 / 10.0) * 255.0).floor() as u8,
+                ((1.0 - n as f32 / 10.0 / 2.5) * 255.0).floor() as u8,
+                255
+            )
+        )).collect();
+        road += "  ";
+        for row in 0..self.length {
+            road += &colored_digits[(row % 10) as usize];
+        }
+        road += "\n";
+        for (index, lane) in self.cells().iter().enumerate() {
+            road += &(colored_digits[index % 10].clone() + " ");
             for cell in lane {
                 if let Some(car) = cell.car() {
                     let [r, g, b] = car.speed_rgb();
@@ -300,7 +338,9 @@ impl fmt::Display for Road {
                     road += "_"
                 }
             }
-            road += "\n";
+            if index + 1 < self.n_lanes as usize {
+                road += "\n";
+            }
         }
         write!(f, "{}", road)
     }

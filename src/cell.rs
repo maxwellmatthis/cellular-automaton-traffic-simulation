@@ -22,11 +22,13 @@ impl Cell {
         self.car.take()
     }
 
-    pub fn put_car(&mut self, car: Car) {
+    pub fn put_car(&mut self, car: Car) -> Result<(), Car> {
         if self.car.is_some() {
-            panic!("Cannot put car into a cell that already contains a car.");
+            // panic!("Cannot put car into a cell that already contains a car.");
+            return Err(car);
         }
         self.car = Some(car);
+        Ok(())
     }
 
     /// Records that a car has passed the cell.
