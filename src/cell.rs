@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use crate::car::Car;
 
 #[derive(Debug)]
@@ -42,3 +43,38 @@ impl Cell {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct CellLocation {
+    lane: usize,
+    index: usize
+}
+
+impl CellLocation {
+    pub fn lane(&self) -> usize {
+        self.lane
+    }
+
+    pub fn index(&self) -> usize {
+        self.index
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseCellLocationError;
+
+impl FromStr for CellLocation {
+    type Err = ParseCellLocationError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (lane, index) = s
+            .strip_prefix('(')
+            .and_then(|s| s.strip_suffix(')'))
+            .and_then(|s| s.split_once(','))
+            .ok_or(ParseCellLocationError)?;
+
+        let lane = lane.parse::<usize>().map_err(|_| ParseCellLocationError)?;
+        let index = index.parse::<usize>().map_err(|_| ParseCellLocationError)?;
+
+        Ok(CellLocation { lane, index })
+    }
+}

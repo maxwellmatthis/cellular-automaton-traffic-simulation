@@ -1,4 +1,6 @@
+use std::fmt::Debug;
 use std::time::{Duration, Instant};
+use std::str::FromStr;
 use std::path::PathBuf;
 use std::thread;
 use road::Road;
@@ -7,6 +9,7 @@ use clap::Parser;
 use serde::Serialize;
 use std::io::{Write, stdout};
 use crossterm::{QueueableCommand, cursor, terminal, ExecutableCommand};
+use crate::cell::CellLocation;
 
 mod road;
 mod cell;
@@ -44,11 +47,11 @@ pub struct Args {
     #[arg(short, long, default_value_t = 0.2)]
     dilly_dally_probability: f32,
 
-    /// The indexes of the cells that are to be monitored. (Note: Although all cells are always
-    /// monitored, only the cells you specify here will be included in the simulation metrics at
-    /// the end on the simulation.)
-    #[arg(long, value_delimiter = ',', default_value = "0")]
-    monitor: Vec<u32>,
+    /// The locations, specified as `(lane_index, cell_index); ...`, of the cells that are to be monitored.
+    /// (Note: all cells are passively monitored but only those specified will be added to the simulation
+    /// result.
+    #[arg(long, value_delimiter = ';', default_value = "(0,0)")]
+    monitor: Vec<String>,
 
     /// Whether to print the states of the road to stdout.
     #[arg(short, long, default_value_t = false)]
@@ -68,6 +71,19 @@ pub struct Args {
     out_path: PathBuf
 }
 
+impl Args {
+    /// Deserializes stringified_tuples that were provided as arguments.
+    /// Note: This method assumes that the parenthesis are each one byte long. Beware of UTF-8
+    /// characters in those positions.
+    pub fn deserialize_tuple_type<D: FromStr>(stringified_tuples: Vec<String>) -> Vec<D> where <D as FromStr>::Err: Debug {
+        let mut tuples = Vec::new();
+        for string in stringified_tuples {
+            tuples.push(string.parse::<D>().unwrap());
+        }
+        tuples
+    }
+}
+
 fn main() {
     let args = Args::parse();
     println!("{}", run_sim(args).json());
@@ -77,6 +93,7 @@ fn main() {
 pub struct SimulationResult {
     // Settings
     pub rounds: u32,
+    pub lanes: u32,
     pub length: u32,
     pub max_speed: u8,
     pub traffic_density: f32,
@@ -110,7 +127,6 @@ pub fn run_sim(args: Args) -> SimulationResult {
     // setup outputs
     if !args.animate && args.verbose { println!("{}", road); }
     let mut stdout = stdout();
-    stdout.execute(cursor::Show).unwrap();
     if args.animate { stdout.execute(cursor::Hide).unwrap(); }
     let mut image_drawer = if args.image {
         ImageDrawer::new(&road, args.rounds + 1)
@@ -142,21 +158,26 @@ pub fn run_sim(args: Args) -> SimulationResult {
     }
     if args.image { image_drawer.save(args.out_path).unwrap(); }
 
-    // TODO: allow monitors for all lanes
-    let flows_cars_per_minute: Vec<f64> = args.monitor
+    let flows_cars_per_minute = Args::deserialize_tuple_type::<CellLocation>(args.monitor)
         .iter()
-        .map(|i| *i as usize)
-        .filter(|i| i < &road.cells().len())
-        .map(|i| road.cells()[0][i].flow(args.rounds) / ROUND_S * 60.0)
+        .map(|cl| {
+            if cl.lane() >= road.lanes() as usize || cl.index() >= road.length() as usize {
+                f64::NAN
+            } else {
+                road.cells()[cl.lane()][cl.index()].flow(args.rounds) / ROUND_S * 60.0
+            }
+        })
         .collect();
+
     SimulationResult {
         // Settings
-        rounds: args.rounds,
-        length: args.length,
+        rounds: road.rounds(),
+        lanes: road.lanes(),
+        length: road.length(),
         max_speed: args.max_speed,
         traffic_density: args.traffic_density,
         cars: road.cars(),
-        dilly_dally_probability: args.dilly_dally_probability,
+        dilly_dally_probability: road.dilly_dally_probability(),
         // Metrics
         runtime_s: start.elapsed().as_secs_f64(),
         average_speed_kilometers_per_hour: road.average_speed() * (CELL_M / ROUND_S) * 3.6,
@@ -181,7 +202,7 @@ mod tests {
             max_speed: 5,
             traffic_density: 0.5,
             dilly_dally_probability: 0.2,
-            monitor: vec![0, 100],
+            monitor: vec!["(24,1000)".to_string()], // invalid monitors result in f64::NAN
             verbose: true,
             image: false,
             animate: false,
@@ -191,6 +212,7 @@ mod tests {
         assert!(result.average_speed_kilometers_per_hour.is_nan());
         assert!(result.average_accelerations_n_per_car_per_round.is_nan());
         assert!(result.average_deaccelerations_n_per_car_per_round.is_nan());
+        assert!(result.monitor_cells_flow_cars_per_minute[0].is_nan());
     }
 
     #[test]
@@ -202,14 +224,15 @@ mod tests {
             max_speed: 5,
             traffic_density: 0.5,
             dilly_dally_probability: 0.2,
-            monitor: vec![0, 500, 999],
-            verbose: true,
+            monitor: vec!["(0,0)".to_string(), "(0,500)".to_string(), "(0,999)".to_string()],
+            verbose: false,
             image: false,
             animate: false,
             out_path: PathBuf::new()
         });
 
         assert_eq!(result.cars, 500);
+        assert!(result.monitor_cells_flow_cars_per_minute[0].is_finite());
     }
 
     #[test]
@@ -221,7 +244,7 @@ mod tests {
             max_speed: 5,
             traffic_density: 0.1,
             dilly_dally_probability: 0.0,
-            monitor: vec![0, 500, 999],
+            monitor: vec!["(0,0)".to_string()],
             verbose: true,
             image: false,
             animate: false,

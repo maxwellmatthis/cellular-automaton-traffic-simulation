@@ -127,9 +127,9 @@ benchmarks/adapter.py:6 and change the comment.
 Every constant used in the simulation has a reasonable default value but can also be manually changed
 when running the simulator from the command line (see usage below).
 
-The simulator can print the details of each round to stdout using the `-v` (verbose) switch and/or
-generate an image using the `-i` (image) switch.
-__Note:__ In image mode cars are represented as pixels ranging from red (stopped) to green (max_speed).
+The simulator can print the details of each round to stdout using the `-v` (verbose) switch or in an
+animated way using the `-a` (animate) switch and generate an image using the `-i` (image) switch.
+__Tip:__ In image mode cars are represented as pixels ranging from red (stopped) to green (max_speed).
 Each row represents a round. The image is read from the bottom up.
 
 The simulator always ends the simulation by printing the its simulation relevant settings and useful
@@ -152,7 +152,7 @@ Options:
   -d, --dilly-dally-probability <DILLY_DALLY_PROBABILITY>
           The probability with which cars dilly-dally. (slow down randomly) [default: 0.2]
       --monitor <MONITOR>
-          The indexes of the cells that are to be monitored. (Note: Although all cells are always monitored, only the cells you specify here will be included in the simulation metrics at the end on the simulation.) [default: 0]
+          The locations, specified as `(lane_index, cell_index); ...`, of the cells that are to be monitored. (Note: all cells are passively monitored but only those specified will be added to the simulation result [default: (0,0)]
   -v, --verbose
           Whether to print the states of the road to stdout
   -a, --animate

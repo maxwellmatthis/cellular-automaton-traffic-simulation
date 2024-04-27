@@ -1,6 +1,6 @@
 import json
 import subprocess
-from typing import Optional, Self, List
+from typing import Optional, Self, List, Tuple
 from dataclasses import dataclass, fields
 
 # BINARY = "cargo run --"
@@ -14,7 +14,7 @@ class SimulationOptions:
     max_speed: Optional[int] = None
     traffic_density: Optional[float] = None
     dilly_dally_probability: Optional[float] = None
-    monitor: List[int] = None
+    monitor: List[Tuple[int, int]] = None
 
     verbose: bool = None
     image: bool = None
@@ -27,7 +27,7 @@ class SimulationOptions:
             if val == None:
                 continue
             if type(val) is list:
-                val = ",".join(map(lambda v : str(v), val))
+                val = ";".join(map(lambda v : str(v).replace(" ", ""), val))
             flags_and_vals.extend([f"--{field.name.replace('_', '-')}", str(val)])
         return flags_and_vals
 
@@ -72,7 +72,7 @@ class SimulationResult:
                 setattr(self, field.name, val / by)
 
 def run(simulation_options: SimulationOptions):
-    output = subprocess.run([BINARY, *simulation_options.to_flags_and_vals()], stdout=subprocess.PIPE).stdout.decode("utf-8")
+    output = subprocess.run([BINARY, *simulation_options.to_flags_and_vals()], stdout=subprocess.PIPE).stdout.decode("utf-8").strip().split("\n")[-1]
     metrics = json.loads(output)
     return SimulationResult(metrics)
 

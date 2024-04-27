@@ -130,6 +130,16 @@ impl Road {
         self.length
     }
 
+    /// Returns the number of rounds that the simulator has run so far.
+    pub fn rounds(&self) -> u32 {
+        self.rounds
+    }
+
+    /// Returns the `dilly_dally_probability`.
+    pub fn dilly_dally_probability(&self) -> f32 {
+        self.dilly_dally_probability
+    }
+
     /// Provides read access to all cells. Outer vector holds lanes, inner vector holds cells.
     pub fn cells(&self) -> &Vec<Vec<Cell>> {
         &self.lanes
