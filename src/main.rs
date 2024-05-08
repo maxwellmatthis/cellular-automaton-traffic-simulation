@@ -47,7 +47,11 @@ pub struct Args {
     #[arg(short, long, default_value_t = 0.2)]
     dilly_dally_probability: f32,
 
-    /// The locations, specified as `(lane_index, cell_index); ...`, of the cells that are to be monitored.
+    /// The probability with which cars stay in their lane, even when it would be best to switch lanes.
+    #[arg(short, long, default_value_t = 0.2)]
+    stay_in_lane_probability: f32,
+
+    /// The locations, specified as `(lane_index,cell_index); ...`, of the cells that are to be monitored.
     /// (Note: all cells are passively monitored but only those specified will be added to the simulation
     /// result.
     #[arg(long, value_delimiter = ';', default_value = "(0,0)")]
@@ -89,7 +93,7 @@ fn main() {
     println!("{}", run_sim(args).json());
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct SimulationResult {
     // Settings
     pub rounds: u32,
@@ -99,6 +103,7 @@ pub struct SimulationResult {
     pub traffic_density: f32,
     pub cars: u32,
     pub dilly_dally_probability: f32,
+    pub stay_in_lane_probability: f32,
     // Metrics
     pub runtime_s: f64,
     pub average_speed_kilometers_per_hour: f64,
@@ -122,7 +127,10 @@ pub fn run_sim(args: Args) -> SimulationResult {
         args.max_speed,
         args.traffic_density,
         args.dilly_dally_probability,
+        args.stay_in_lane_probability,
     );
+
+    let monitors = Args::deserialize_tuple_type::<CellLocation>(args.monitor);
 
     // setup outputs
     if !args.animate && args.verbose { println!("{}", road); }
@@ -158,7 +166,7 @@ pub fn run_sim(args: Args) -> SimulationResult {
     }
     if args.image { image_drawer.save(args.out_path).unwrap(); }
 
-    let flows_cars_per_minute = Args::deserialize_tuple_type::<CellLocation>(args.monitor)
+    let flows_cars_per_minute = monitors
         .iter()
         .map(|cl| {
             if cl.lane() >= road.lanes() as usize || cl.index() >= road.length() as usize {
@@ -178,6 +186,7 @@ pub fn run_sim(args: Args) -> SimulationResult {
         traffic_density: args.traffic_density,
         cars: road.cars(),
         dilly_dally_probability: road.dilly_dally_probability(),
+        stay_in_lane_probability: road.stay_in_lane_probability(),
         // Metrics
         runtime_s: start.elapsed().as_secs_f64(),
         average_speed_kilometers_per_hour: road.average_speed() * (CELL_M / ROUND_S) * 3.6,
@@ -202,12 +211,15 @@ mod tests {
             max_speed: 5,
             traffic_density: 0.5,
             dilly_dally_probability: 0.2,
+            stay_in_lane_probability: 0.0,
             monitor: vec!["(24,1000)".to_string()], // invalid monitors result in f64::NAN
             verbose: true,
             image: false,
             animate: false,
             out_path: PathBuf::new()
         });
+
+        println!("{:?}", result);
 
         assert!(result.average_speed_kilometers_per_hour.is_nan());
         assert!(result.average_accelerations_n_per_car_per_round.is_nan());
@@ -224,12 +236,15 @@ mod tests {
             max_speed: 5,
             traffic_density: 0.5,
             dilly_dally_probability: 0.2,
+            stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string(), "(0,500)".to_string(), "(0,999)".to_string()],
             verbose: false,
             image: false,
             animate: false,
             out_path: PathBuf::new()
         });
+
+        println!("{:?}", result);
 
         assert_eq!(result.cars, 500);
         assert!(result.monitor_cells_flow_cars_per_minute[0].is_finite());
@@ -244,12 +259,15 @@ mod tests {
             max_speed: 5,
             traffic_density: 0.1,
             dilly_dally_probability: 0.0,
+            stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string()],
             verbose: true,
             image: false,
             animate: false,
             out_path: PathBuf::new()
         });
+
+        println!("{:?}", result);
 
         assert_eq!(result.cars, 1);
         assert_eq!(
@@ -264,6 +282,64 @@ mod tests {
             result.average_deaccelerations_n_per_car_per_round,
             0.0
         );
+    }
+
+    #[test]
+    fn three_cars_three_lanes_no_switches() {
+        let result = run_sim(Args {
+            rounds: 10,
+            lanes: 3,
+            length: 10,
+            max_speed: 5,
+            traffic_density: 0.1,
+            dilly_dally_probability: 0.0,
+            stay_in_lane_probability: 1.0,
+            monitor: vec!["(0,0)".to_string(), "(1,0)".to_string(), "(2,0)".to_string()],
+            verbose: true,
+            image: false,
+            animate: false,
+            out_path: PathBuf::new()
+        });
+
+        println!("{:?}", result);
+
+        assert_eq!(result.cars, 3);
+        assert!(result.average_speed_kilometers_per_hour <= 108.0);
+        assert!(result.average_speed_kilometers_per_hour >= 50.0);
+        assert!(result.average_accelerations_n_per_car_per_round >= 0.5);
+        assert_eq!(result.stay_in_lane_probability, 1.0);
+    }
+
+    #[test]
+    fn slow_all_moving_over() {
+        let result = run_sim(Args {
+            rounds: 100,
+            lanes: 10,
+            length: 20,
+            max_speed: 2,
+            traffic_density: 0.1,
+            dilly_dally_probability: 0.1,
+            stay_in_lane_probability: 0.0,
+            monitor: {
+                let mut mon = Vec::new();
+                for lane in 4..9 {
+                    mon.push(format!("({},0)", lane));
+                }
+                mon
+            },
+            verbose: true,
+            image: false,
+            animate: false,
+            out_path: PathBuf::new()
+        });
+
+        println!("{:?}", result);
+
+        let mut last = 0.0;
+        for val in result.monitor_cells_flow_cars_per_minute {
+            assert!(last <= val);
+            last = val;
+        }
     }
 }
 

@@ -27,6 +27,7 @@ The following steps are executed in order for each car each round.
 - Switching is only allowed if there is no one (1) directly in front of or (2) next to the car. Exception: Switching is with a car directly in front is allowed for cars moving at `1cell/round`.
 - Passing directly on the right is not allowed.
 - Cars that switch lanes do not dilly-dally. (This avoids cars going sideways by switching lanes at `v=0cells/round` and break checking people behind them.)
+- Cars may stay in their lane `stay_in_lane_probability * 100`% of the time. This models how drivers forget or choose not to switch lanes when they have the chance and should.
 
 - Cars always switch to the right lane if there is enough space (speed + 1 cells) for them to drive without slowing down.
 - Cars always switch to the lane with the most space if none of the lanes have enough space to drive without slowing down.
@@ -151,6 +152,8 @@ Options:
           The density of traffic. Number of cars on the road are computed as `floor(traffic_density * road_length)` [default: 0.5]
   -d, --dilly-dally-probability <DILLY_DALLY_PROBABILITY>
           The probability with which cars dilly-dally. (slow down randomly) [default: 0.2]
+  -s, --stay-in-lane-probability <STAY_IN_LANE_PROBABILITY>
+          The probability with which cars stay in their lane, even when it would be best to switch lanes [default: 0.2]
       --monitor <MONITOR>
           The locations, specified as `(lane_index, cell_index); ...`, of the cells that are to be monitored. (Note: all cells are passively monitored but only those specified will be added to the simulation result [default: (0,0)]
   -v, --verbose

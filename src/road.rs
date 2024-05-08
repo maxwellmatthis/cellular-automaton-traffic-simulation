@@ -50,6 +50,7 @@ pub struct Road {
     cars: u32,
     overflow_flip_flop: FlipFlop,
     dilly_dally_probability: f32,
+    stay_in_lane_probability: f32,
 }
 
 impl Road {
@@ -59,6 +60,7 @@ impl Road {
         max_speed: u8,
         traffic_density: f32,
         dilly_dally_probability: f32, 
+        stay_in_lane_probability: f32,
     ) -> Self {
         if !(0.0..=1.0).contains(&traffic_density) {
             panic!("Traffic density must be a number between 0 and 1.");
@@ -107,6 +109,7 @@ impl Road {
             cars: cars_per_lane * n_lanes,
             overflow_flip_flop: FlipFlop::new(),
             dilly_dally_probability,
+            stay_in_lane_probability,
         }
     }
 
@@ -138,6 +141,11 @@ impl Road {
     /// Returns the `dilly_dally_probability`.
     pub fn dilly_dally_probability(&self) -> f32 {
         self.dilly_dally_probability
+    }
+
+    /// Returns the `stay_in_lane_probability`.
+    pub fn stay_in_lane_probability(&self) -> f32 {
+        self.stay_in_lane_probability
     }
 
     /// Provides read access to all cells. Outer vector holds lanes, inner vector holds cells.
@@ -230,7 +238,8 @@ impl Road {
 
                         // -- calculate movement and update car --
                         car.increase_speed();
-                        let best_switch: LaneSwitch = self.determine_best_lane(lane_i, car.speed(), left_clear, right_clear);
+                        let stay = Self::occurs(&mut self.rng, self.stay_in_lane_probability);
+                        let best_switch: LaneSwitch = self.determine_best_lane(lane_i, car.speed(), left_clear, right_clear, stay);
                         let is_switch = best_switch.is_switch();
                         car.finish(best_switch.driveable(), !is_switch && Self::occurs(&mut self.rng, self.dilly_dally_probability));
                         self.cells_to_next_cars[lane_i] = 0;
@@ -275,9 +284,9 @@ impl Road {
         self.overflow_flip_flop.flip_flop();
     }
 
-    /// Determines the best lane to switch to (or stay on) based on surrounding traffic and
-    /// available_speed.
-    fn determine_best_lane(&self, lane_i: usize, available_speed: u8, left_clear: bool, right_clear: bool) -> LaneSwitch {
+    /// Determines the best lane to switch to (or stay on) based on surrounding traffic, 
+    /// available_speed and the stay in late probability.
+    fn determine_best_lane(&self, lane_i: usize, available_speed: u8, left_clear: bool, right_clear: bool, stay: bool) -> LaneSwitch {
         let driveable_without_passing_on_right = |target_lane_offset: isize| {
             let left_index = lane_i as isize + target_lane_offset - 1;
             let target_lane_index = (lane_i as isize + target_lane_offset) as usize;
@@ -304,7 +313,7 @@ impl Road {
         let front_space = cmp::min(driveable_without_passing_on_right(0), available_speed);
         let mut best_option = LaneSwitch::Stay(front_space);
 
-        if front_space >= 1 || available_speed <= 1 {
+        if !stay && (front_space >= 1 || available_speed <= 1) {
             if left_clear {
                 let left_space = cmp::min(driveable_without_passing_on_right(-1), available_speed);
                 if left_space > 0 && left_space > best_option.driveable() {

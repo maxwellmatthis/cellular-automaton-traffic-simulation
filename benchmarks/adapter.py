@@ -14,6 +14,7 @@ class SimulationOptions:
     max_speed: Optional[int] = None
     traffic_density: Optional[float] = None
     dilly_dally_probability: Optional[float] = None
+    stay_in_lane_probability: Optional[float] = None
     monitor: List[Tuple[int, int]] = None
 
     verbose: bool = None
@@ -40,6 +41,7 @@ class SimulationResult:
     traffic_density: float
     cars: int
     dilly_dally_probability: float
+    stay_in_lane_probability: float
 
     runtime_s: float
     average_speed_kilometers_per_hour: float
