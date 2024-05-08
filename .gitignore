@@ -17,7 +17,7 @@ Cargo.lock
 /target
 
 # Simulator Output
-/traffic.png
+/*.png
 /*.svg
 
 # MacOS

@@ -2,7 +2,8 @@ use std::path::PathBuf;
 use crate::Road;
 use image::{ImageError, Rgb, RgbImage};
 
-const SEPERATOR_COLOR: Rgb<u8> = Rgb([90, 90, 90]); // Rgb([255, 255, 255]);
+const SEPERATOR_COLOR: Rgb<u8> = Rgb([0, 60, 180]); // Rgb([255, 255, 255]);
+const BLOCK_COLOR: Rgb<u8> = Rgb([180, 0, 180]);
 
 #[derive(Debug)]
 pub struct ImageDrawer {
@@ -43,12 +44,17 @@ impl ImageDrawer {
         self.current_row -= self.road_lanes;
         for (y, lane) in road.cells().iter().enumerate() {
             for (x, cell) in lane.iter().enumerate() {
-                if let Some(car) = cell.car() {
-                    let color = Rgb(car.speed_rgb());
+                if cell.blocked() {
                     self.image.put_pixel(
                         TryInto::<u32>::try_into(x).unwrap(),
                         last_row + y as u32,
-                        color
+                        BLOCK_COLOR
+                    );
+                } else if let Some(car) = cell.car() {
+                    self.image.put_pixel(
+                        TryInto::<u32>::try_into(x).unwrap(),
+                        last_row + y as u32,
+                        Rgb(car.speed_rgb())
                     );
                 }
             }
@@ -65,3 +71,4 @@ impl ImageDrawer {
         self.image.save(filepath)
     }
 }
+

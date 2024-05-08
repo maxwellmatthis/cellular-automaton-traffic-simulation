@@ -51,11 +51,17 @@ pub struct Args {
     #[arg(short, long, default_value_t = 0.2)]
     stay_in_lane_probability: f32,
 
-    /// The locations, specified as `(lane_index,cell_index); ...`, of the cells that are to be monitored.
+    /// The locations, specified as `(lane_index, cell_index); ...`, of the cells that are to be monitored.
     /// (Note: all cells are passively monitored but only those specified will be added to the simulation
     /// result.
     #[arg(long, value_delimiter = ';', default_value = "(0,0)")]
     monitor: Vec<String>,
+
+    /// The locations, specified as `(lane_index, cell_index_start - cell_index_end_exclusive); ...`
+    /// or `(lane_index, cell_index); ...`, of the cells that may not be driven over. This simulates
+    /// blockages as they occur when construction work is being done.
+    #[arg(long, value_delimiter = ';', default_value = "")]
+    block: Vec<String>,
 
     /// Whether to print the states of the road to stdout.
     #[arg(short, long, default_value_t = false)]
@@ -128,6 +134,7 @@ pub fn run_sim(args: Args) -> SimulationResult {
         args.traffic_density,
         args.dilly_dally_probability,
         args.stay_in_lane_probability,
+        Args::deserialize_tuple_type(args.block),
     );
 
     let monitors = Args::deserialize_tuple_type::<CellLocation>(args.monitor);
@@ -198,9 +205,11 @@ pub fn run_sim(args: Args) -> SimulationResult {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::{path::PathBuf, str::FromStr};
 
     use crate::{run_sim, Args, CELL_M, ROUND_S};
+
+    // -- simple simulation --
 
     #[test]
     fn no_road() {
@@ -213,6 +222,7 @@ mod tests {
             dilly_dally_probability: 0.2,
             stay_in_lane_probability: 0.0,
             monitor: vec!["(24,1000)".to_string()], // invalid monitors result in f64::NAN
+            block: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -238,6 +248,7 @@ mod tests {
             dilly_dally_probability: 0.2,
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string(), "(0,500)".to_string(), "(0,999)".to_string()],
+            block: vec![],
             verbose: false,
             image: false,
             animate: false,
@@ -261,6 +272,7 @@ mod tests {
             dilly_dally_probability: 0.0,
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string()],
+            block: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -284,6 +296,8 @@ mod tests {
         );
     }
 
+    // -- multilane extension --
+
     #[test]
     fn three_cars_three_lanes_no_switches() {
         let result = run_sim(Args {
@@ -295,6 +309,7 @@ mod tests {
             dilly_dally_probability: 0.0,
             stay_in_lane_probability: 1.0,
             monitor: vec!["(0,0)".to_string(), "(1,0)".to_string(), "(2,0)".to_string()],
+            block: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -322,11 +337,12 @@ mod tests {
             stay_in_lane_probability: 0.0,
             monitor: {
                 let mut mon = Vec::new();
-                for lane in 4..9 {
+                for lane in 4..=8 {
                     mon.push(format!("({},0)", lane));
                 }
                 mon
             },
+            block: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -340,6 +356,106 @@ mod tests {
             assert!(last <= val);
             last = val;
         }
+    }
+
+    // -- multilane extension with blockages --
+
+    #[test]
+    fn single_lane_full_blockage() {
+        let result = run_sim(Args {
+            rounds: 10,
+            lanes: 1,
+            length: 10,
+            max_speed: 5,
+            traffic_density: 0.1,
+            dilly_dally_probability: 0.0,
+            stay_in_lane_probability: 0.0,
+            monitor: vec!["(0,0)".to_string()],
+            block: vec!["(0,0)".to_string()],
+            verbose: true,
+            image: false,
+            animate: false,
+            out_path: PathBuf::new()
+        });
+
+        println!("{:?}", result);
+
+        assert_eq!(result.cars, 1);
+        assert_eq!(result.monitor_cells_flow_cars_per_minute[0], 0.0);
+    }
+
+    #[test]
+    fn left_lane_full_blockage() {
+        // This test is the same as `one_car`, except that there is a second lane
+        // that is totally blocked.
+        let result = run_sim(Args {
+            rounds: 10,
+            lanes: 2,
+            length: 10,
+            max_speed: 5,
+            traffic_density: 0.1,
+            dilly_dally_probability: 0.0,
+            stay_in_lane_probability: 0.0,
+            monitor: vec!["(0,0)".to_string()],
+            block: vec!["(0,0-10)".to_string()],
+            verbose: true,
+            image: false,
+            animate: false,
+            out_path: PathBuf::new()
+        });
+
+        println!("{:?}", result);
+
+        assert_eq!(result.cars, 1);
+        assert_eq!(
+            result.average_speed_kilometers_per_hour,
+            (1+2+3+4+5+(10-5)*5) as f64 / 10.0 * (CELL_M / ROUND_S) * 3.6
+        );
+        assert_eq!(
+            result.average_accelerations_n_per_car_per_round,
+            5.0 / 10.0
+        );
+        assert_eq!(
+            result.average_deaccelerations_n_per_car_per_round,
+            0.0
+        );
+    }
+
+    #[test]
+    fn ultra_bottleneck() {
+        let _result = run_sim(Args {
+            rounds: 100,
+            lanes: 10,
+            length: 100,
+            max_speed: 5,
+            traffic_density: 0.3,
+            dilly_dally_probability: 0.0,
+            stay_in_lane_probability: 0.0,
+            monitor: vec![],
+            block: {
+                let mut blk = Vec::new();
+                for lane in 0..=7 {
+                    blk.push(format!("({},{}-100)", lane, 90 + lane));
+                }
+                for lane in 2..=9 {
+                    blk.push(format!("({},{}-30)", lane, 20 + (9 - lane)));
+                }
+                for lane in 4..=6 {
+                    blk.push(format!("({},50-60)", lane));
+                }
+                blk
+            },
+            verbose: true,
+            animate: false,
+            image: false,
+            out_path: PathBuf::from_str("traffic-ultra_bottleneck.png").unwrap()
+        });
+
+        // This test is too confusing to write comprehensive tests for. It's enough for me if
+        // nothing in the simulator itself panics.
+        // Just uncomment the following explicit `panic!` and set `Args.image` to `true` and witness
+        // the chaos unfold:
+        // panic!();
     }
 }
 
