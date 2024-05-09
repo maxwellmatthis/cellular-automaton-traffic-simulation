@@ -11,11 +11,10 @@ class SimulationOptions:
     lanes: Optional[int] = None
     rounds: Optional[int] = None
     length: Optional[int] = None
-    max_speed: Optional[int] = None
-    traffic_density: Optional[float] = None
+    vehicles: Optional[List[Tuple[float, float, float]]] = None
     dilly_dally_probability: Optional[float] = None
     stay_in_lane_probability: Optional[float] = None
-    monitor: List[Tuple[int, int]] = None
+    monitor: Optional[List[Tuple[int, int]]] = None
 
     verbose: bool = None
     image: bool = None
@@ -37,8 +36,7 @@ class SimulationResult:
     rounds: int
     lanes: int
     length: int
-    max_speed: int
-    traffic_density: float
+    # TODO: add complex simulation parameters and exclude them from averageing
     cars: int
     dilly_dally_probability: float
     stay_in_lane_probability: float

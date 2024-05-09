@@ -58,6 +58,11 @@ pub struct Args {
     #[arg(long, value_delimiter = ';', default_value = "(0,0)")]
     monitor: Vec<String>,
 
+    /// The locations, specified as `(lane_index, cell_index); ...`, of the cells that represent
+    /// traffic lights. Traffic lights will be green for 100 rounds and then be red for 100 rounds.
+    #[arg(long, value_delimiter = ';', default_value = "")]
+    traffic_lights: Vec<String>,
+
     /// The locations, specified as `(lane_index, cell_index_start - cell_index_end_exclusive); ...`
     /// or `(lane_index, cell_index); ...`, of the cells that may not be driven over. This simulates
     /// blockages as they occur when construction work is being done.
@@ -89,7 +94,7 @@ impl Args {
     pub fn deserialize_tuple_type<D: FromStr>(stringified_tuples: &Vec<String>) -> Vec<D> where <D as FromStr>::Err: Debug {
         let mut tuples = Vec::new();
         for string in stringified_tuples {
-            if string == "" { continue; }
+            if string.is_empty() { continue; }
             tuples.push(string.parse::<D>().unwrap());
         }
         tuples
@@ -106,6 +111,10 @@ impl Args {
     pub fn block(&self) -> Vec<CellLocationRange> {
         Self::deserialize_tuple_type(&self.block)
     }
+
+    pub fn traffic_lights(&self) -> Vec<CellLocation> {
+        Self::deserialize_tuple_type(&self.traffic_lights)
+    }
 }
 
 fn main() {
@@ -121,6 +130,7 @@ pub struct SimulationResult {
     pub length: u32,
     pub vehicle_blueprints: Vec<VehicleBlueprint>,
     pub block: Vec<CellLocationRange>,
+    pub traffic_lights: Vec<CellLocation>,
     pub cars: u32,
     pub dilly_dally_probability: f32,
     pub stay_in_lane_probability: f32,
@@ -143,6 +153,7 @@ pub fn run_sim(args: Args) -> SimulationResult {
     let args_vehicles = args.vehicles();
     let args_monitors = args.monitor();
     let args_block = args.block();
+    let args_traffic_lights = args.traffic_lights();
 
     // setup
     let start = Instant::now();
@@ -153,6 +164,7 @@ pub fn run_sim(args: Args) -> SimulationResult {
         args.dilly_dally_probability,
         args.stay_in_lane_probability,
         &args_block,
+        &args_traffic_lights,
     );
 
     // setup outputs
@@ -174,7 +186,7 @@ pub fn run_sim(args: Args) -> SimulationResult {
             stdout.write_all(format!("{}", road).as_bytes()).unwrap();
             stdout.queue(cursor::RestorePosition).unwrap();
             stdout.flush().unwrap();
-            thread::sleep(Duration::from_millis(200));
+            thread::sleep(Duration::from_millis(20));
             stdout.queue(cursor::RestorePosition).unwrap();
             stdout.queue(terminal::Clear(terminal::ClearType::FromCursorDown)).unwrap();
         } else if args.verbose {
@@ -207,6 +219,7 @@ pub fn run_sim(args: Args) -> SimulationResult {
         length: road.length(),
         vehicle_blueprints: args_vehicles,
         block: args_block,
+        traffic_lights: args_traffic_lights,
         cars: road.cars(),
         dilly_dally_probability: road.dilly_dally_probability(),
         stay_in_lane_probability: road.stay_in_lane_probability(),
@@ -238,6 +251,7 @@ mod tests {
             stay_in_lane_probability: 0.0,
             monitor: vec!["(24,1000)".to_string()], // invalid monitors result in f64::NAN
             block: vec![],
+            traffic_lights: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -263,6 +277,7 @@ mod tests {
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string(), "(0,500)".to_string(), "(0,999)".to_string()],
             block: vec![],
+            traffic_lights: vec![],
             verbose: false,
             image: false,
             animate: false,
@@ -286,6 +301,7 @@ mod tests {
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string()],
             block: vec![],
+            traffic_lights: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -322,6 +338,7 @@ mod tests {
             stay_in_lane_probability: 1.0,
             monitor: vec!["(0,0)".to_string(), "(1,0)".to_string(), "(2,0)".to_string()],
             block: vec![],
+            traffic_lights: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -354,6 +371,7 @@ mod tests {
                 mon
             },
             block: vec![],
+            traffic_lights: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -382,6 +400,7 @@ mod tests {
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string()],
             block: vec!["(0,0)".to_string()],
+            traffic_lights: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -407,6 +426,7 @@ mod tests {
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string()],
             block: vec!["(0,0-10)".to_string()],
+            traffic_lights: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -453,6 +473,7 @@ mod tests {
                 }
                 blk
             },
+            traffic_lights: vec![],
             verbose: true,
             animate: false,
             image: false,
@@ -479,6 +500,7 @@ mod tests {
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string()],
             block: vec![],
+            traffic_lights: vec![],
             verbose: true,
             image: false,
             animate: false,
@@ -501,8 +523,9 @@ mod tests {
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string()],
             block: vec![],
+            traffic_lights: vec![],
             verbose: true,
-            image: true,
+            image: false,
             animate: false,
             out_path: PathBuf::from_str("traffic-bunch_of_truck.png").unwrap()
         });
@@ -510,7 +533,58 @@ mod tests {
         println!("{:?}", result);
 
         assert!(result.monitor_cells_flow_cars_per_minute[0] > 0.0);
-        panic!();
+    }
+
+    #[test]
+    #[should_panic]
+    fn sum_of_densities_cannot_be_greater_than_1() {
+        let result = run_sim(Args {
+            rounds: 100,
+            lanes: 1,
+            length: 100,
+            vehicles: vec!["(4, 6, 0.3)".to_string(), "(5, 1, 0.8)".to_string()],
+            dilly_dally_probability: 0.0,
+            stay_in_lane_probability: 0.0,
+            monitor: vec![],
+            block: vec![],
+            traffic_lights: vec![],
+            verbose: true,
+            image: false,
+            animate: false,
+            out_path: PathBuf::new()
+        });
+
+        println!("{:?}", result);
+    }
+
+    // -- traffic lights --
+
+    #[test]
+    fn single_lane_traffic_light() {
+        let result = run_sim(Args {
+            rounds: 200,
+            lanes: 1,
+            length: 10,
+            vehicles: vec!["(5, 1, 0.1)".to_string()],
+            dilly_dally_probability: 0.0,
+            stay_in_lane_probability: 0.0,
+            monitor: vec!["(0,0)".to_string()],
+            block: vec![],
+            traffic_lights: vec!["(0, 9)".to_string()],
+            verbose: true,
+            image: false,
+            animate: false,
+            out_path: PathBuf::new()
+        });
+
+        println!("{:?}", result);
+
+        assert_eq!(result.cars, 1);
+        assert!(
+            result.average_speed_kilometers_per_hour -
+            (1+2+3+4+5+(100-5)*5) as f64 / 200.0 * (CELL_M / ROUND_S) * 3.6
+            < 2.0
+        );
     }
 }
 

@@ -15,7 +15,7 @@ accelerations = []
 deaccelerations = []
 
 for dilly_dally_probability in dilly_dally_probabilities:
-    metrics = run_average(SimulationOptions(traffic_density=0.3, dilly_dally_probability=dilly_dally_probability), SIMULATIONS_EACH)
+    metrics = run_average(SimulationOptions(vehicles=[(5, 1, 0.3)], dilly_dally_probability=dilly_dally_probability), SIMULATIONS_EACH)
     average_speeds.append(metrics.average_speed_kilometers_per_hour)
     first_cell_flows.append(metrics.monitor_cells_flow_cars_per_minute[0])
     accelerations.append(metrics.average_accelerations_n_per_car_per_round)

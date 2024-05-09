@@ -4,6 +4,7 @@ use image::{ImageError, Rgb, RgbImage};
 
 const SEPERATOR_COLOR: Rgb<u8> = Rgb([0, 60, 180]); // Rgb([255, 255, 255]);
 const BLOCK_COLOR: Rgb<u8> = Rgb([180, 0, 180]);
+const RED_TRAFFIC_LIGHT_COLOR: Rgb<u8> = Rgb([50, 0, 180]);
 
 #[derive(Debug)]
 pub struct ImageDrawer {
@@ -49,6 +50,12 @@ impl ImageDrawer {
                         TryInto::<u32>::try_into(x).unwrap(),
                         last_row + y as u32,
                         BLOCK_COLOR
+                    );
+                } else if cell.is_red_light(road.traffic_lights_red()) {
+                    self.image.put_pixel(
+                        TryInto::<u32>::try_into(x).unwrap(),
+                        last_row + y as u32,
+                        RED_TRAFFIC_LIGHT_COLOR
                     );
                 } else if let Some(car) = cell.car() {
                     self.image.put_pixel(

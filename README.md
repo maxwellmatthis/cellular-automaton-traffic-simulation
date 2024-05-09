@@ -23,6 +23,8 @@ The following steps are executed in order for each car each round.
 
 ### Multi-Lane Extension
 
+The multilane extension adds support for multiple lanes and lane switching to the model.
+
 - Cars can only switch to adjacent lanes.
 - Switching is only allowed if there is no one (1) directly in front of or (2) next to the car. Exception: Switching is with a car directly in front is allowed for cars moving at `1cell/round`.
 - Passing directly on the right is not allowed.
@@ -89,6 +91,14 @@ The following examples show the options and behaviour of the red car (`v=5cells/
 |✅ |✅ |✅ |❌ |
 |❌ |🚗 |❌ |❌ |
 
+### Lane Blocking Extension
+
+The lane blocking extension adds the option to block individual cells or ranges of cells. The feature can be used to simulate a construction site or accident.
+
+### Traffic Light Extension
+
+The traffic light extension add traffic lights to the model. All traffic lights turn red and green at the same time. Switching occurs every 100 model seconds (100 simulation rounds).
+
 ## Installation & Setup
 
 ### Simulator
@@ -146,16 +156,18 @@ Options:
           The number of lanes that make up the road [default: 1]
   -l, --length <LENGTH>
           The number of cells in each lane that make up the road [default: 1000]
-  -m, --max-speed <MAX_SPEED>
-          The maximum number of cells that a car can drive in a round [default: 5]
-  -t, --traffic-density <TRAFFIC_DENSITY>
-          The density of traffic. Number of cars on the road are computed as `floor(traffic_density * road_length)` [default: 0.5]
+      --vehicles <VEHICLES>
+          Allows specifying different vehicle types and with which density they occur. Format: `(max_speed, acceleration_time, traffic_density); ...` Corresponding model with units: `(x * 7.5m/s, (1 / x) * 7.5m/s^2, x * 100% of road on lane-by-lane basis)` [default: "(5, 1, 0.2)"]
   -d, --dilly-dally-probability <DILLY_DALLY_PROBABILITY>
           The probability with which cars dilly-dally. (slow down randomly) [default: 0.2]
   -s, --stay-in-lane-probability <STAY_IN_LANE_PROBABILITY>
           The probability with which cars stay in their lane, even when it would be best to switch lanes [default: 0.2]
       --monitor <MONITOR>
           The locations, specified as `(lane_index, cell_index); ...`, of the cells that are to be monitored. (Note: all cells are passively monitored but only those specified will be added to the simulation result [default: (0,0)]
+      --traffic-lights <TRAFFIC_LIGHTS>
+          The locations, specified as `(lane_index, cell_index); ...`, of the cells that represent traffic lights. Traffic lights will be green for 100 rounds and then be red for 100 rounds [default: ]
+      --block <BLOCK>
+          The locations, specified as `(lane_index, cell_index_start - cell_index_end_exclusive); ...` or `(lane_index, cell_index); ...`, of the cells that may not be driven over. This simulates blockages as they occur when construction work is being done [default: ]
   -v, --verbose
           Whether to print the states of the road to stdout
   -a, --animate

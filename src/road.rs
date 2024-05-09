@@ -1,6 +1,6 @@
 use std::{cmp, fmt, isize};
 use rand::prelude::*;
-use crate::cell::{Cell, CellLocationRange, PutCarErrorInformation};
+use crate::cell::{Cell, CellLocation, CellLocationRange, PutCarErrorInformation};
 use crate::car::{Car, VehicleBlueprint};
 use crate::flip_flop::FlipFlop;
 use colored::Colorize;
@@ -52,6 +52,7 @@ pub struct Road {
     overflow_flip_flop: FlipFlop,
     dilly_dally_probability: f32,
     stay_in_lane_probability: f32,
+    traffic_lights_red: bool,
 }
 
 impl Road {
@@ -62,6 +63,7 @@ impl Road {
         dilly_dally_probability: f32, 
         stay_in_lane_probability: f32,
         block: &Vec<CellLocationRange>,
+        traffic_lights: &Vec<CellLocation>,
     ) -> Self {
 
         if !(0.0..=1.0).contains(&dilly_dally_probability) {
@@ -73,6 +75,7 @@ impl Road {
 
         let mut lanes = Self::create_lanes_and_cells(n_lanes, length);
         let unblocked_cells_per_lane = Self::block_cells(&mut lanes, length, block);
+        Self::add_traffic_lights(&mut lanes, traffic_lights);
         let n_cars = Self::add_cars(&mut lanes, unblocked_cells_per_lane, &mut rng, vehicle_blueprints);
 
         Self {
@@ -87,6 +90,7 @@ impl Road {
             overflow_flip_flop: FlipFlop::new(),
             dilly_dally_probability,
             stay_in_lane_probability,
+            traffic_lights_red: false,
         }
     }
 
@@ -119,6 +123,12 @@ impl Road {
         unblocked_cells_per_lane
     }
 
+    fn add_traffic_lights(lanes: &mut [Vec<Cell>], traffic_lights: &Vec<CellLocation>) {
+        for traffic_light in traffic_lights {
+            lanes[traffic_light.lane()][traffic_light.index()].make_traffic_light();
+        }
+    }
+
     /// Adds cars to the road. Formula for number of cars in each lane: `(traffic_density * unblocked_cells_in_lane).round()`.
     fn add_cars(lanes: &mut [Vec<Cell>], unblocked_cells_per_lane: Vec<u32>, rng: &mut ThreadRng, vehicle_blueprints: &Vec<VehicleBlueprint>) -> u32 {
         if !(0.0..=1.0).contains(&vehicle_blueprints.iter().map(|vb| vb.traffic_density()).reduce(|acc, td| td + acc).unwrap()) {
@@ -132,7 +142,7 @@ impl Road {
                 let mut index: usize = 0;
                 while spawned_cars < n_cars_in_lane {
                     let cell = &mut lane[index];
-                    if Self::occurs(rng, vehicle_blueprint.traffic_density()) && cell.free() {
+                    if Self::occurs(rng, vehicle_blueprint.traffic_density()) && cell.free(false) {
                         spawned_cars += 1;
                         cell.put_car(Car::new(vehicle_blueprint)).unwrap();
                     }
@@ -223,11 +233,19 @@ impl Road {
         sum as f64 / self.cars() as f64 / self.rounds() as f64
     }
 
+    fn update_traffic_lights(&mut self) {
+        self.traffic_lights_red = self.rounds % 100 != self.rounds % 200;
+    }
+
+    pub fn traffic_lights_red(&self) -> bool {
+        self.traffic_lights_red
+    }
+
     fn prepare_cells_to_next_obstacles_for_wrap_around(&mut self) {
         for (lane_i, lane) in self.lanes.iter().enumerate() {
             let mut looking_for_first_obstacle = true;
             'cells: for cell_i in 0u8..cmp::min(self.length(), 255) as u8 {
-                if looking_for_first_obstacle && !lane[cell_i as usize].free() {
+                if looking_for_first_obstacle && !lane[cell_i as usize].free(self.traffic_lights_red) {
                     self.cells_to_next_obstacles[lane_i] = cell_i;
                     looking_for_first_obstacle = false;
                 }
@@ -242,8 +260,8 @@ impl Road {
     fn check_sides_clear(&self, lane_index: usize, cell_index: usize) -> (bool, bool) {
         let not_in_leftmost_lane = lane_index > 0;
         let not_in_rightmost_lane = lane_index + 1 != self.lanes.len();
-        let left_clear = not_in_leftmost_lane && self.lanes[lane_index - 1][cell_index].free();
-        let right_clear = not_in_rightmost_lane && self.lanes[lane_index + 1][cell_index].free();
+        let left_clear = not_in_leftmost_lane && self.lanes[lane_index - 1][cell_index].free(self.traffic_lights_red);
+        let right_clear = not_in_rightmost_lane && self.lanes[lane_index + 1][cell_index].free(self.traffic_lights_red);
         (left_clear, right_clear)
     }
 
@@ -275,6 +293,7 @@ impl Road {
     /// Simulates one round of the cellular automaton.
     pub fn round(&mut self) {
         self.rounds += 1;
+        self.update_traffic_lights();
 
         let length = self.length() as usize;
         let n_lanes = self.lanes.len();
@@ -285,7 +304,7 @@ impl Road {
         for rev_i in 1..=length {
             let cell_i = length - rev_i;
             for lane_i in 0..n_lanes {
-                if self.lanes[lane_i][cell_i].blocked() {
+                if self.lanes[lane_i][cell_i].blocked() || self.lanes[lane_i][cell_i].is_red_light(self.traffic_lights_red) {
                     // skip blocked cells
                     self.note_car_free(lane_i, true);
                     continue;
@@ -419,6 +438,8 @@ impl fmt::Display for Road {
                     road += &format!("{}", car.speed().to_string().truecolor(r, g, b));
                 } else if cell.blocked() {
                     road += "x";
+                } else if cell.is_red_light(self.traffic_lights_red()) {
+                    road += "#";
                 } else {
                     road += "_";
                 }

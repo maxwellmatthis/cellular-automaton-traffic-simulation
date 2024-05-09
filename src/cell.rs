@@ -14,6 +14,7 @@ pub struct Cell {
     car: Option<Car>,
     cars_passed: i32,
     blocked: bool,
+    traffic_light: bool,
 }
 
 impl Cell {
@@ -22,6 +23,7 @@ impl Cell {
             car: None,
             cars_passed: 0,
             blocked: false,
+            traffic_light: false,
         }
     }
 
@@ -35,6 +37,17 @@ impl Cell {
         self.blocked = true;
     }
 
+    /// Designates the cell as a traffic light. It will turn in sync with the other traffic lights.
+    pub fn make_traffic_light(&mut self) {
+        self.traffic_light = true;
+    }
+
+    /// Returns whether the cell represents a red light. The condition is met when the traffic
+    /// lights are red and the cell is a traffic light.
+    pub fn is_red_light(&self, light_red: bool) -> bool {
+        self.traffic_light && light_red
+    }
+
     /// Returns whether the cell is blocked.
     pub fn blocked(&self) -> bool {
         self.blocked
@@ -42,8 +55,8 @@ impl Cell {
 
     /// Returns whether the cell is free, meaning it contains no car and is not blocked, hence
     /// theoretically driveable.
-    pub fn free(&self) -> bool {
-        !self.blocked() && self.car().is_none()
+    pub fn free(&self, light_red: bool) -> bool {
+         !(self.blocked() || self.car().is_some() || self.traffic_light && light_red)
     }
 
     /// Takes the car from the cell if there is one.
@@ -72,7 +85,7 @@ impl Cell {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct CellLocation {
     lane: usize,
     index: usize

@@ -15,7 +15,7 @@ accelerations = []
 deaccelerations = []
 
 for max_speed in max_speeds:
-    metrics = run_average(SimulationOptions(max_speed=max_speed, traffic_density=0.4, dilly_dally_probability=0.0, monitor=[0, 10, 20]), SIMULATIONS_EACH)
+    metrics = run_average(SimulationOptions(vehicles=[(max_speed, 1, 0.4)], dilly_dally_probability=0.0, monitor=[(0, 0)]), SIMULATIONS_EACH)
     average_speeds.append(metrics.average_speed_kilometers_per_hour)
     first_cell_flows.append(metrics.monitor_cells_flow_cars_per_minute[0])
     accelerations.append(metrics.average_accelerations_n_per_car_per_round)
