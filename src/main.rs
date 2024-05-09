@@ -3,6 +3,8 @@ use std::time::{Duration, Instant};
 use std::str::FromStr;
 use std::path::PathBuf;
 use std::thread;
+use car::VehicleBlueprint;
+use cell::CellLocationRange;
 use road::Road;
 use image_drawer::ImageDrawer;
 use clap::Parser;
@@ -35,13 +37,12 @@ pub struct Args {
     #[arg(short, long, default_value_t = 1000)]
     length: u32,
 
-    /// The maximum number of cells that a car can drive in a round.
-    #[arg(short, long, default_value_t = 5)]
-    max_speed: u8,
-
-    /// The density of traffic. Number of cars on the road are computed as `floor(traffic_density * road_length)`.
-    #[arg(short, long, default_value_t = 0.5)]
-    traffic_density: f32,
+    /// Allows specifying different vehicle types and with which density they occur.
+    /// Format: `(max_speed, acceleration_time, traffic_density); ...`
+    /// Corresponding model with units: `(x * 7.5m/s, (1 / x) * 7.5m/s^2, x * 100% of road on lane-by-lane
+    /// basis)`
+    #[arg(long, value_delimiter = ';', default_value = "(5, 1, 0.2)")]
+    vehicles: Vec<String>,
 
     /// The probability with which cars dilly-dally. (slow down randomly)
     #[arg(short, long, default_value_t = 0.2)]
@@ -85,12 +86,25 @@ impl Args {
     /// Deserializes stringified_tuples that were provided as arguments.
     /// Note: This method assumes that the parenthesis are each one byte long. Beware of UTF-8
     /// characters in those positions.
-    pub fn deserialize_tuple_type<D: FromStr>(stringified_tuples: Vec<String>) -> Vec<D> where <D as FromStr>::Err: Debug {
+    pub fn deserialize_tuple_type<D: FromStr>(stringified_tuples: &Vec<String>) -> Vec<D> where <D as FromStr>::Err: Debug {
         let mut tuples = Vec::new();
         for string in stringified_tuples {
+            if string == "" { continue; }
             tuples.push(string.parse::<D>().unwrap());
         }
         tuples
+    }
+
+    pub fn vehicles(&self) -> Vec<VehicleBlueprint> {
+        Self::deserialize_tuple_type(&self.vehicles)
+    }
+
+    pub fn monitor(&self) -> Vec<CellLocation> {
+        Self::deserialize_tuple_type(&self.monitor)
+    }
+
+    pub fn block(&self) -> Vec<CellLocationRange> {
+        Self::deserialize_tuple_type(&self.block)
     }
 }
 
@@ -105,8 +119,8 @@ pub struct SimulationResult {
     pub rounds: u32,
     pub lanes: u32,
     pub length: u32,
-    pub max_speed: u8,
-    pub traffic_density: f32,
+    pub vehicle_blueprints: Vec<VehicleBlueprint>,
+    pub block: Vec<CellLocationRange>,
     pub cars: u32,
     pub dilly_dally_probability: f32,
     pub stay_in_lane_probability: f32,
@@ -125,19 +139,21 @@ impl SimulationResult {
 }
 
 pub fn run_sim(args: Args) -> SimulationResult {
+    // Parse data here so that the program fails immediately if anything is wrong.
+    let args_vehicles = args.vehicles();
+    let args_monitors = args.monitor();
+    let args_block = args.block();
+
     // setup
     let start = Instant::now();
     let mut road = Road::new(
         args.lanes,
         args.length,
-        args.max_speed,
-        args.traffic_density,
+        &args_vehicles,
         args.dilly_dally_probability,
         args.stay_in_lane_probability,
-        Args::deserialize_tuple_type(args.block),
+        &args_block,
     );
-
-    let monitors = Args::deserialize_tuple_type::<CellLocation>(args.monitor);
 
     // setup outputs
     if !args.animate && args.verbose { println!("{}", road); }
@@ -173,7 +189,7 @@ pub fn run_sim(args: Args) -> SimulationResult {
     }
     if args.image { image_drawer.save(args.out_path).unwrap(); }
 
-    let flows_cars_per_minute = monitors
+    let flows_cars_per_minute = args_monitors
         .iter()
         .map(|cl| {
             if cl.lane() >= road.lanes() as usize || cl.index() >= road.length() as usize {
@@ -189,8 +205,8 @@ pub fn run_sim(args: Args) -> SimulationResult {
         rounds: road.rounds(),
         lanes: road.lanes(),
         length: road.length(),
-        max_speed: args.max_speed,
-        traffic_density: args.traffic_density,
+        vehicle_blueprints: args_vehicles,
+        block: args_block,
         cars: road.cars(),
         dilly_dally_probability: road.dilly_dally_probability(),
         stay_in_lane_probability: road.stay_in_lane_probability(),
@@ -217,8 +233,7 @@ mod tests {
             rounds: 100,
             lanes: 0,
             length: 0,
-            max_speed: 5,
-            traffic_density: 0.5,
+            vehicles: vec!["(5, 1, 0.5)".to_string()],
             dilly_dally_probability: 0.2,
             stay_in_lane_probability: 0.0,
             monitor: vec!["(24,1000)".to_string()], // invalid monitors result in f64::NAN
@@ -243,8 +258,7 @@ mod tests {
             rounds: 4096,
             lanes: 1,
             length: 1000,
-            max_speed: 5,
-            traffic_density: 0.5,
+            vehicles: vec!["(5, 1, 0.5)".to_string()],
             dilly_dally_probability: 0.2,
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string(), "(0,500)".to_string(), "(0,999)".to_string()],
@@ -267,8 +281,7 @@ mod tests {
             rounds: 10,
             lanes: 1,
             length: 10,
-            max_speed: 5,
-            traffic_density: 0.1,
+            vehicles: vec!["(5, 1, 0.1)".to_string()],
             dilly_dally_probability: 0.0,
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string()],
@@ -304,8 +317,7 @@ mod tests {
             rounds: 10,
             lanes: 3,
             length: 10,
-            max_speed: 5,
-            traffic_density: 0.1,
+            vehicles: vec!["(5, 1, 0.1)".to_string()],
             dilly_dally_probability: 0.0,
             stay_in_lane_probability: 1.0,
             monitor: vec!["(0,0)".to_string(), "(1,0)".to_string(), "(2,0)".to_string()],
@@ -331,8 +343,7 @@ mod tests {
             rounds: 100,
             lanes: 10,
             length: 20,
-            max_speed: 2,
-            traffic_density: 0.1,
+            vehicles: vec!["(2, 1, 0.1)".to_string()],
             dilly_dally_probability: 0.1,
             stay_in_lane_probability: 0.0,
             monitor: {
@@ -366,8 +377,7 @@ mod tests {
             rounds: 10,
             lanes: 1,
             length: 10,
-            max_speed: 5,
-            traffic_density: 0.1,
+            vehicles: vec!["(5, 1, 0.1)".to_string()],
             dilly_dally_probability: 0.0,
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string()],
@@ -392,8 +402,7 @@ mod tests {
             rounds: 10,
             lanes: 2,
             length: 10,
-            max_speed: 5,
-            traffic_density: 0.1,
+            vehicles: vec!["(5, 1, 0.1)".to_string()],
             dilly_dally_probability: 0.0,
             stay_in_lane_probability: 0.0,
             monitor: vec!["(0,0)".to_string()],
@@ -427,8 +436,7 @@ mod tests {
             rounds: 100,
             lanes: 10,
             length: 100,
-            max_speed: 5,
-            traffic_density: 0.3,
+            vehicles: vec!["(5, 1, 0.3)".to_string()],
             dilly_dally_probability: 0.0,
             stay_in_lane_probability: 0.0,
             monitor: vec![],
@@ -456,6 +464,53 @@ mod tests {
         // Just uncomment the following explicit `panic!` and set `Args.image` to `true` and witness
         // the chaos unfold:
         // panic!();
+    }
+
+    // -- different vehicle types extension --
+
+    #[test]
+    fn slow_truck_causing_traffic_jam() {
+        let result = run_sim(Args {
+            rounds: 100,
+            lanes: 1,
+            length: 100,
+            vehicles: vec!["(4, 6, 0.01)".to_string(), "(5, 1, 0.2)".to_string()],
+            dilly_dally_probability: 0.0,
+            stay_in_lane_probability: 0.0,
+            monitor: vec!["(0,0)".to_string()],
+            block: vec![],
+            verbose: true,
+            image: false,
+            animate: false,
+            out_path: PathBuf::from_str("traffic-slow_truck.png").unwrap()
+        });
+
+        println!("{:?}", result);
+
+        assert!(result.monitor_cells_flow_cars_per_minute[0] > 0.0);
+    }
+    
+    #[test]
+    fn bunch_of_trucks() {
+        let result = run_sim(Args {
+            rounds: 100,
+            lanes: 1,
+            length: 100,
+            vehicles: vec!["(4, 6, 0.3)".to_string()],
+            dilly_dally_probability: 0.0,
+            stay_in_lane_probability: 0.0,
+            monitor: vec!["(0,0)".to_string()],
+            block: vec![],
+            verbose: true,
+            image: true,
+            animate: false,
+            out_path: PathBuf::from_str("traffic-bunch_of_truck.png").unwrap()
+        });
+
+        println!("{:?}", result);
+
+        assert!(result.monitor_cells_flow_cars_per_minute[0] > 0.0);
+        panic!();
     }
 }
 

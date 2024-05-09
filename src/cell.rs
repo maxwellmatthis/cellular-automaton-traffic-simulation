@@ -1,4 +1,6 @@
 use std::{ops::Range, str::FromStr};
+use serde::Serialize;
+
 use crate::car::Car;
 
 #[derive(Debug)]
@@ -106,7 +108,7 @@ impl FromStr for CellLocation {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct CellLocationRange {
     lane: usize,
     start: usize,

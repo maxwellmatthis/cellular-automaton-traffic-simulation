@@ -1,7 +1,7 @@
 use std::{cmp, fmt, isize};
 use rand::prelude::*;
 use crate::cell::{Cell, CellLocationRange, PutCarErrorInformation};
-use crate::car::Car;
+use crate::car::{Car, VehicleBlueprint};
 use crate::flip_flop::FlipFlop;
 use colored::Colorize;
 
@@ -58,16 +58,13 @@ impl Road {
     pub fn new(
         lanes: u32,
         length: u32,
-        max_speed: u8,
-        traffic_density: f32,
+        vehicle_blueprints: &Vec<VehicleBlueprint>,
         dilly_dally_probability: f32, 
         stay_in_lane_probability: f32,
-        block: Vec<CellLocationRange>,
+        block: &Vec<CellLocationRange>,
     ) -> Self {
-        if !(0.0..=1.0).contains(&traffic_density) {
-            panic!("Traffic density must be a number between 0 and 1.");
-        }
-        if !(0.0..=1.0).contains(&traffic_density) {
+
+        if !(0.0..=1.0).contains(&dilly_dally_probability) {
             panic!("Dilly-dally probability must be a number between 0 and 1.");
         }
 
@@ -76,7 +73,7 @@ impl Road {
 
         let mut lanes = Self::create_lanes_and_cells(n_lanes, length);
         let unblocked_cells_per_lane = Self::block_cells(&mut lanes, length, block);
-        let n_cars = Self::add_cars(&mut lanes, unblocked_cells_per_lane, traffic_density, &mut rng, max_speed);
+        let n_cars = Self::add_cars(&mut lanes, unblocked_cells_per_lane, &mut rng, vehicle_blueprints);
 
         Self {
             rng,
@@ -108,9 +105,8 @@ impl Road {
 
     /// Blocks the certain cells for construction simulation. Returns the number of unblocked cells
     /// in each lane.
-    fn block_cells(lanes: &mut [Vec<Cell>], length: u32, block: Vec<CellLocationRange>) -> Vec<u32> {
+    fn block_cells(lanes: &mut [Vec<Cell>], length: u32, block: &Vec<CellLocationRange>) -> Vec<u32> {
         let mut unblocked_cells_per_lane = vec![length; lanes.len()];
-        println!("{:?}", unblocked_cells_per_lane);
         for blocked in block {
             let lane_i = blocked.lane();
             let lane = &mut lanes[blocked.lane()];
@@ -124,21 +120,26 @@ impl Road {
     }
 
     /// Adds cars to the road. Formula for number of cars in each lane: `(traffic_density * unblocked_cells_in_lane).round()`.
-    fn add_cars(lanes: &mut [Vec<Cell>], unblocked_cells_per_lane: Vec<u32>, traffic_density: f32, rng: &mut ThreadRng, max_speed: u8) -> u32 {
+    fn add_cars(lanes: &mut [Vec<Cell>], unblocked_cells_per_lane: Vec<u32>, rng: &mut ThreadRng, vehicle_blueprints: &Vec<VehicleBlueprint>) -> u32 {
+        if !(0.0..=1.0).contains(&vehicle_blueprints.iter().map(|vb| vb.traffic_density()).reduce(|acc, td| td + acc).unwrap()) {
+            panic!("The sum of all traffic densities must be a number between 0 and 1.");
+        }
         let mut n_cars: u32 = 0;
-        for (lane, unblocked)in lanes.iter_mut().zip(unblocked_cells_per_lane.iter()) {
-            let n_cars_in_lane = (traffic_density * *unblocked as f32).round() as u32;
-            let mut spawned_cars: u32 = 0;
-            let mut index: usize = 0;
-            while spawned_cars < n_cars_in_lane {
-                let cell = &mut lane[index];
-                if Self::occurs(rng, traffic_density) && cell.free() {
-                    spawned_cars += 1;
-                    cell.put_car(Car::new(max_speed, 0)).unwrap();
+        for vehicle_blueprint in vehicle_blueprints {
+            for (lane, unblocked)in lanes.iter_mut().zip(unblocked_cells_per_lane.iter()) {
+                let n_cars_in_lane = (vehicle_blueprint.traffic_density() * *unblocked as f32).round() as u32;
+                let mut spawned_cars: u32 = 0;
+                let mut index: usize = 0;
+                while spawned_cars < n_cars_in_lane {
+                    let cell = &mut lane[index];
+                    if Self::occurs(rng, vehicle_blueprint.traffic_density()) && cell.free() {
+                        spawned_cars += 1;
+                        cell.put_car(Car::new(vehicle_blueprint)).unwrap();
+                    }
+                    index = (index + 1) % lane.len();
                 }
-                index = (index + 1) % lane.len();
+                n_cars += n_cars_in_lane;
             }
-            n_cars += n_cars_in_lane;
         }
         n_cars
     }
