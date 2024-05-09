@@ -2,102 +2,11 @@
 
 A primarily one-dimensional cellular automaton for traffic simulation based on the Nagel-Schreckenberg model. (See: [Nagel-Schreckenberg model (Wikipedia/DE)](https://en.wikipedia.org/wiki/Nagel–Schreckenberg_model), [Nagel-Schreckenberg-Modell (Wikipedia/DE)](https://de.wikipedia.org/wiki/Nagel-Schreckenberg-Modell))
 
-## Model
+## Table of Contents
 
-### Basics
-
-- The road is a closed loop, which means that the number of cars is constant and driving forever is possible.
-- The road is a made up of cells, where each cell may contain exactly one or no car.
-- Cars are `7.5m` long. => Each cell is `7.5m` long.
-- Each round is 1s long.
-- Cars can move a natural number of cells (equal to their speed) each round. => Cars move at `n * 7.5m/s` (`n * 27km/h`).
-- The default maximum speed is set to `5cells/round`, although it can be set to any number. (Note: It does not make sense to set the maximum speed any higher than `10cells/round` (`10 * 27km/h => 270km/h`) since there are almost no cars that can reach and almost no drivers willing to pay for the gasoline needed to sustain such speeds.)
-
-### Update Rules
-
-The following steps are executed in order for each car each round.
-
-1. Increase speed by `7.5m/s`.
-2. Decrease speed to `cells_to_next_car * 7.5m/s`.
-3. Decrease speed by `7.5m/s` with a chance of `dilly_dally_probability`.
-
-### Multi-Lane Extension 🛣️
-
-The multilane extension adds support for multiple lanes and lane switching to the model.
-
-- Cars can only switch to adjacent lanes.
-- Switching is only allowed if there is no one (1) directly in front of or (2) next to the car. Exception: Switching is with a car directly in front is allowed for cars moving at `1cell/round`.
-- Passing directly on the right is not allowed.
-- Cars that switch lanes do not dilly-dally. (This avoids cars going sideways by switching lanes at `v=0cells/round` and break checking people behind them.)
-- Cars may stay in their lane `stay_in_lane_probability * 100`% of the time. This models how drivers forget or choose not to switch lanes when they have the chance and should.
-
-- Cars always switch to the right lane if there is enough space (speed + 1 cells) for them to drive without slowing down.
-- Cars always switch to the lane with the most space if none of the lanes have enough space to drive without slowing down.
-
-Since all cars theoretically move at the same time but it is very hard to make the computer
-simulate all cars at the same time, the cars are simulated lane-by-lane, starting on the left.
-This functions without hard-to-resolve conflicts, because passing on the right is not allowed.
-
-__Examples:__
-
-The following examples show the options and behaviour of the red car (`v=5cells/round`) for one round. The columns represent lanes 1-4.
-
-(Legend: 🚙 : other car, ❌ : not allowed, ✅ : allowed, 🎯 : where the car will move to)
-
-| 1 | 2 | 3 | 4 |
-| --- | --- | --- | --- |
-|❌ |🚙 |❌ |🚙 |
-|❌ |🚙 |❌ |🚙 |
-|❌ |🚙 |❌ |❌ |
-|❌ |🚙 |❌ |❌ |
-|❌ |🚙 |❌ |❌ |
-|❌ |🚗 |❌ |❌ |
-
-| 1 | 2 | 3 | 4 |
-| --- | --- | --- | --- |
-|🎯 |🚙 |🚙 |🚙 |
-|✅ |🚙 |🚙 |🚙 |
-|✅ |❌ |❌ |❌ |
-|✅ |🚙 |✅ |❌ |
-|✅ |✅ |✅ |❌ |
-|❌ |🚗 |❌ |❌ |
-
-| 1 | 2 | 3 | 4 |
-| --- | --- | --- | --- |
-|❌ |🚙 |🚙 |🚙 |
-|❌ |🚙 |🎯 |❌ |
-|❌ |✅ |✅ |❌ |
-|🚙 |🚗 |✅ |❌ |
-|❌ |❌ |🚙 |❌ |
-
-| 1 | 2 | 3 | 4 |
-| --- | --- | --- | --- |
-|❌ |❌ |🚙 |❌ |
-|❌ |❌ |❌ |❌ |
-|✅ |✅ |🎯 |❌ |
-|✅ |✅ |✅ |❌ |
-|✅ |✅ |✅ |❌ |
-|✅ |✅ |✅ |❌ |
-|✅ |✅ |✅ |❌ |
-|❌ |🚗 |❌ |❌ |
-
-| 1 | 2 | 3 | 4 |
-| --- | --- | --- | --- |
-|❌ |❌ |🚙 |❌ |
-|✅ |🎯 |✅ |❌ |
-|✅ |✅ |✅ |❌ |
-|✅ |✅ |✅ |❌ |
-|✅ |✅ |✅ |❌ |
-|✅ |✅ |✅ |❌ |
-|❌ |🚗 |❌ |❌ |
-
-### Lane Blocking Extension 🚧
-
-The lane blocking extension adds the option to block individual cells or ranges of cells. The feature can be used to simulate a construction site or accident.
-
-### Traffic Light Extension 🚦
-
-The traffic light extension add traffic lights to the model. All traffic lights turn red and green at the same time. Switching occurs every 100 model seconds (100 simulation rounds).
+- [Installation & Setup](#installation--setup)
+- [Usage](#usage)
+- [Model](#model)
 
 ## Installation & Setup
 
@@ -229,3 +138,99 @@ plot(VARIABLE, "Deaccelerations (n/car/round)", dilly_dally_probabilities, deacc
 
 The results from all benchmarks are stored in [benchmarks/results/](./benchmarks/results/).
 
+## Model
+
+### Basics
+
+- The road is a closed loop, which means that the number of cars is constant and driving forever is possible.
+- The road is a made up of cells, where each cell may contain exactly one or no car.
+- Cars are `7.5m` long. => Each cell is `7.5m` long.
+- Each round is 1s long.
+- Cars can move a natural number of cells (equal to their speed) each round. => Cars move at `n * 7.5m/s` (`n * 27km/h`).
+- The default maximum speed is set to `5cells/round`, although it can be set to any number. (Note: It does not make sense to set the maximum speed any higher than `10cells/round` (`10 * 27km/h => 270km/h`) since there are almost no cars that can reach and almost no drivers willing to pay for the gasoline needed to sustain such speeds.)
+
+### Update Rules
+
+The following steps are executed in order for each car each round.
+
+1. Increase speed by `7.5m/s`.
+2. Decrease speed to `cells_to_next_car * 7.5m/s`.
+3. Decrease speed by `7.5m/s` with a chance of `dilly_dally_probability`.
+
+### Multi-Lane Extension 🛣️
+
+The multilane extension adds support for multiple lanes and lane switching to the model.
+
+- Cars can only switch to adjacent lanes.
+- Switching is only allowed if there is no one (1) directly in front of or (2) next to the car. Exception: Switching is with a car directly in front is allowed for cars moving at `1cell/round`.
+- Passing directly on the right is not allowed.
+- Cars that switch lanes do not dilly-dally. (This avoids cars going sideways by switching lanes at `v=0cells/round` and break checking people behind them.)
+- Cars may stay in their lane `stay_in_lane_probability * 100`% of the time. This models how drivers forget or choose not to switch lanes when they have the chance and should.
+
+- Cars always switch to the right lane if there is enough space (speed + 1 cells) for them to drive without slowing down.
+- Cars always switch to the lane with the most space if none of the lanes have enough space to drive without slowing down.
+
+Since all cars theoretically move at the same time but it is very hard to make the computer
+simulate all cars at the same time, the cars are simulated lane-by-lane, starting on the left.
+This functions without hard-to-resolve conflicts, because passing on the right is not allowed.
+
+__Examples:__
+
+The following examples show the options and behaviour of the red car (`v=5cells/round`) for one round. The columns represent lanes 1-4.
+
+(Legend: 🚙 : other car, ❌ : not allowed, ✅ : allowed, 🎯 : where the car will move to)
+
+| 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- |
+|❌ |🚙 |❌ |🚙 |
+|❌ |🚙 |❌ |🚙 |
+|❌ |🚙 |❌ |❌ |
+|❌ |🚙 |❌ |❌ |
+|❌ |🚙 |❌ |❌ |
+|❌ |🚗 |❌ |❌ |
+
+| 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- |
+|🎯 |🚙 |🚙 |🚙 |
+|✅ |🚙 |🚙 |🚙 |
+|✅ |❌ |❌ |❌ |
+|✅ |🚙 |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|❌ |🚗 |❌ |❌ |
+
+| 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- |
+|❌ |🚙 |🚙 |🚙 |
+|❌ |🚙 |🎯 |❌ |
+|❌ |✅ |✅ |❌ |
+|🚙 |🚗 |✅ |❌ |
+|❌ |❌ |🚙 |❌ |
+
+| 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- |
+|❌ |❌ |🚙 |❌ |
+|❌ |❌ |❌ |❌ |
+|✅ |✅ |🎯 |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|❌ |🚗 |❌ |❌ |
+
+| 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- |
+|❌ |❌ |🚙 |❌ |
+|✅ |🎯 |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|✅ |✅ |✅ |❌ |
+|❌ |🚗 |❌ |❌ |
+
+### Lane Blocking Extension 🚧
+
+The lane blocking extension adds the option to block individual cells or ranges of cells. The feature can be used to simulate a construction site or accident.
+
+### Traffic Light Extension 🚦
+
+The traffic light extension add traffic lights to the model. All traffic lights turn red and green at the same time. Switching occurs every 100 model seconds (100 simulation rounds).
