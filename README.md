@@ -1,6 +1,6 @@
 # Cellular Automaton Traffic Simulation
 
-A primarily one-dimensional cellular automaton for traffic simulation based on the Nagel-Schreckenberg model. (See: [Nagel-Schreckenberg model (Wikipedia/DE)](https://en.wikipedia.org/wiki/Nagel–Schreckenberg_model), [Nagel-Schreckenberg-Modell (Wikipedia/DE)](https://de.wikipedia.org/wiki/Nagel-Schreckenberg-Modell))
+A cellular automaton for traffic simulation based on the Nagel-Schreckenberg model. (See: [Nagel-Schreckenberg model (Wikipedia/DE)](https://en.wikipedia.org/wiki/Nagel–Schreckenberg_model), [Nagel-Schreckenberg-Modell (Wikipedia/DE)](https://de.wikipedia.org/wiki/Nagel-Schreckenberg-Modell)) Extended to support multiple lanes, construction sites, traffic lights, different vehicle types and more.
 
 ## Table of Contents
 
