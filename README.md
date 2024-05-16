@@ -52,7 +52,7 @@ animated way using the `-a` (animate) switch and generate an image using the `-i
 __Tip:__ In image mode cars are represented as pixels ranging from red (stopped) to green (max_speed).
 Each row represents a round. The image is read from the bottom up.
 
-The simulator always ends the simulation by printing the its simulation relevant settings and useful
+The simulator always ends the simulation by printing relevant settings and useful
 metrics about the simulation as JSON.
 
 ```sh

@@ -20,7 +20,7 @@ accelerations = []
 deaccelerations = []
 
 SIMULATIONS_EACH = 10
-ROUNDS = 5000
+ROUNDS = 600
 
 simulations = len(max_speeds) * len(densities) * SIMULATIONS_EACH
 print(f"Running all {simulations} simulations ({simulations * ROUNDS} rounds total)...")
@@ -31,7 +31,7 @@ for max_speed in max_speeds:
         print(f"    running for density={density}")
         max_speeds_expanded.append(max_speed)
         densities_expanded.append(density)
-        metrics = run_average(SimulationOptions(vehicles=[(max_speed, 1, density)], rounds=ROUNDS), SIMULATIONS_EACH)
+        metrics = run_average(SimulationOptions(vehicles=[(max_speed, 1, density)], rounds=ROUNDS, dilly_dally_probability=0.15), SIMULATIONS_EACH)
         average_speeds.append(metrics.average_speed_kilometers_per_hour)
         first_cell_flows.append(metrics.monitor_cells_flow_cars_per_minute[0])
         accelerations.append(metrics.average_accelerations_n_per_car_per_round)
