@@ -5,8 +5,17 @@ A cellular automaton for traffic simulation based on the Nagel-Schreckenberg mod
 ## Table of Contents
 
 - [Installation & Setup](#installation--setup)
+  - [Simulator](#simulator)
+  - [Benchmark Tools](#benchmark-tools)
 - [Usage](#usage)
+  - [Simulator](#simulator-1)
+  - [Benchmarking](#benchmarking)
 - [Model](#model)
+  - [Basics](#basics)
+  - [Update Rules](#update-rules)
+  - [Multi Lane Extension](#multi-lane-extension)
+  - [Cell Blocking Extension](#lane-blocking-extension)
+  - [Traffic Light Extension](#traffic-light-extension)
 
 ## Installation & Setup
 
@@ -157,7 +166,7 @@ The following steps are executed in order for each car each round.
 2. Decrease speed to `cells_to_next_car * 7.5m/s`.
 3. Decrease speed by `7.5m/s` with a chance of `dilly_dally_probability`.
 
-### Multi-Lane Extension 🛣️
+### Multi-Lane Extension
 
 The multilane extension adds support for multiple lanes and lane switching to the model.
 
@@ -227,10 +236,10 @@ The following examples show the options and behaviour of the red car (`v=5cells/
 |✅ |✅ |✅ |❌ |
 |❌ |🚗 |❌ |❌ |
 
-### Lane Blocking Extension 🚧
+### Cell Blocking Extension
 
 The lane blocking extension adds the option to block individual cells or ranges of cells. The feature can be used to simulate a construction site or accident.
 
-### Traffic Light Extension 🚦
+### Traffic Light Extension
 
 The traffic light extension add traffic lights to the model. All traffic lights turn red and green at the same time. Switching occurs every 100 model seconds (100 simulation rounds).
