@@ -14,7 +14,7 @@ A cellular automaton for traffic simulation based on the Nagel-Schreckenberg mod
   - [Basics](#basics)
   - [Update Rules](#update-rules)
   - [Multi Lane Extension](#multi-lane-extension)
-  - [Cell Blocking Extension](#lane-blocking-extension)
+  - [Cell Blocking Extension](#cell-blocking-extension)
   - [Traffic Light Extension](#traffic-light-extension)
 
 ## Installation & Setup
