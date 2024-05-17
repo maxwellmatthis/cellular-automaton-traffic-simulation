@@ -301,8 +301,7 @@ impl Road {
         self.prepare_cells_to_next_obstacles_for_wrap_around();
 
         // Iterate over cars in reverse to avoid having to look ahead each time.
-        for rev_i in 1..=length {
-            let cell_i = length - rev_i;
+        for cell_i in (0..length).rev() {
             for lane_i in 0..n_lanes {
                 if self.lanes[lane_i][cell_i].blocked() || self.lanes[lane_i][cell_i].is_red_light(self.traffic_lights_red) {
                     // skip blocked cells
