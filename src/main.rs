@@ -8,7 +8,7 @@ use cell::CellLocationRange;
 use road::Road;
 use image_drawer::ImageDrawer;
 use clap::Parser;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::io::{Write, stdout};
 use crossterm::{QueueableCommand, cursor, terminal, ExecutableCommand};
 use crate::cell::CellLocation;
@@ -22,7 +22,7 @@ mod flip_flop;
 const CELL_M: f64 = 7.5;
 const ROUND_S: f64 = 1.0;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Deserialize)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     /// The number of rounds to run the simulation for.
@@ -84,10 +84,20 @@ pub struct Args {
 
     /// Where to save the visualization image.
     #[arg(short, long, default_value = "traffic.png")]
-    out_path: PathBuf
+    out_path: PathBuf,
+
+    /// Optionally provide simulator settings as a yaml file to avoid using the command line for
+    /// detailed simulations. Note: All Options except `yaml` must be used!
+    #[arg(short, long)]
+    yaml: Option<PathBuf>,
 }
 
 impl Args {
+    pub fn from_yaml(yaml: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let deserialized: Args = serde_yaml::from_str(yaml)?;
+        Ok(deserialized)
+    }
+
     /// Deserializes stringified_tuples that were provided as arguments.
     /// Note: This method assumes that the parenthesis are each one byte long. Beware of UTF-8
     /// characters in those positions.
@@ -117,9 +127,16 @@ impl Args {
     }
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
-    println!("{}", run_sim(args).json());
+    if let Some(yaml) = args.yaml {
+        let contents = std::fs::read_to_string(yaml).expect("Unable to read YAML file at provided path.");
+        let new_args = Args::from_yaml(&contents).expect("Failed to parse YAML contents.");
+        println!("{}", run_sim(new_args).json());
+    } else {
+        println!("{}", run_sim(args).json());
+    }
+    Ok(())
 }
 
 #[derive(Serialize, Debug)]
@@ -183,7 +200,7 @@ pub fn run_sim(args: Args) -> SimulationResult {
             stdout.write_all(format!("{}", road).as_bytes()).unwrap();
             stdout.queue(cursor::RestorePosition).unwrap();
             stdout.flush().unwrap();
-            thread::sleep(Duration::from_millis(20));
+            thread::sleep(Duration::from_millis(50));
             stdout.queue(cursor::RestorePosition).unwrap();
             stdout.queue(terminal::Clear(terminal::ClearType::FromCursorDown)).unwrap();
         } else if args.verbose {
@@ -249,7 +266,8 @@ mod tests {
             verbose: true,
             image: false,
             animate: false,
-            out_path: PathBuf::new()
+            out_path: PathBuf::new(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -275,7 +293,8 @@ mod tests {
             verbose: false,
             image: false,
             animate: false,
-            out_path: PathBuf::new()
+            out_path: PathBuf::new(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -299,7 +318,8 @@ mod tests {
             verbose: true,
             image: false,
             animate: false,
-            out_path: PathBuf::new()
+            out_path: PathBuf::new(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -336,7 +356,8 @@ mod tests {
             verbose: true,
             image: false,
             animate: false,
-            out_path: PathBuf::new()
+            out_path: PathBuf::new(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -369,7 +390,8 @@ mod tests {
             verbose: true,
             image: false,
             animate: false,
-            out_path: PathBuf::new()
+            out_path: PathBuf::new(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -398,7 +420,8 @@ mod tests {
             verbose: true,
             image: false,
             animate: false,
-            out_path: PathBuf::new()
+            out_path: PathBuf::new(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -424,7 +447,8 @@ mod tests {
             verbose: true,
             image: false,
             animate: false,
-            out_path: PathBuf::new()
+            out_path: PathBuf::new(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -471,7 +495,8 @@ mod tests {
             verbose: true,
             animate: false,
             image: false,
-            out_path: PathBuf::from_str("traffic-ultra_bottleneck.png").unwrap()
+            out_path: PathBuf::from_str("traffic-ultra_bottleneck.png").unwrap(),
+            yaml: None
         });
 
         // This test is too confusing to write comprehensive tests for. It's enough for me if
@@ -498,7 +523,8 @@ mod tests {
             verbose: true,
             image: false,
             animate: false,
-            out_path: PathBuf::from_str("traffic-slow_truck.png").unwrap()
+            out_path: PathBuf::from_str("traffic-slow_truck.png").unwrap(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -521,7 +547,8 @@ mod tests {
             verbose: true,
             image: false,
             animate: false,
-            out_path: PathBuf::from_str("traffic-bunch_of_truck.png").unwrap()
+            out_path: PathBuf::from_str("traffic-bunch_of_truck.png").unwrap(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -545,7 +572,8 @@ mod tests {
             verbose: true,
             image: false,
             animate: false,
-            out_path: PathBuf::new()
+            out_path: PathBuf::new(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -568,7 +596,8 @@ mod tests {
             verbose: true,
             image: false,
             animate: false,
-            out_path: PathBuf::new()
+            out_path: PathBuf::new(),
+            yaml: None
         });
 
         println!("{:?}", result);
@@ -579,6 +608,22 @@ mod tests {
             (1+2+3+4+5+(100-5)*5) as f64 / 200.0 * (CELL_M / ROUND_S) * 3.6
             < 2.0
         );
+    }
+
+    // -- yaml reading --
+
+    #[test]
+    #[should_panic]
+    fn empty_yaml() {
+        let _ = Args::from_yaml("").expect("Unable to parse yaml file.");
+    }
+
+    #[test]
+    fn example_yaml() {
+        let args = Args::from_yaml("rounds: 110\nlanes: 3\nlength: 300\nvehicles:\n  - '(7, 1, 0.01)'\n  - '(5, 2, 0.19)'\n  - '(4, 6, 0.05)'\ndilly_dally_probability: 0.15\nstay_in_lane_probability: 0.1\nmonitor:\n  - '(0, 0)'\n  - '(1, 0)'\n  - '(2, 0)'\ntraffic_lights:\n  - '(1, 150)'\nblock:\n  - '(0, 150-180)'\nverbose: false\nanimate: false\nimage: false\nout_path: 'example.png'")
+                .expect("Unable to parse yaml file.");
+
+        assert_eq!(args.lanes, 3);
     }
 }
 

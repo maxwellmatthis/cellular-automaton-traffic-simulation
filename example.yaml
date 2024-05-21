@@ -1,0 +1,22 @@
+rounds: 110
+lanes: 3
+length: 300
+vehicles:
+  - (7, 1, 0.01)
+  - (5, 2, 0.19)
+  - (4, 6, 0.05)
+dilly_dally_probability: 0.15
+stay_in_lane_probability: 0.1
+monitor:
+  - (0, 0)
+  - (1, 0)
+  - (2, 0)
+traffic_lights:
+  - (1, 150)
+block:
+  - (0, 150-180)
+verbose: false
+animate: true
+image: true
+out_path: example.png
+

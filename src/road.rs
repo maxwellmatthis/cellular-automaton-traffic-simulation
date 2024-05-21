@@ -131,7 +131,7 @@ impl Road {
 
     /// Adds cars to the road. Formula for number of cars in each lane: `(traffic_density * unblocked_cells_in_lane).round()`.
     fn add_cars(lanes: &mut [Vec<Cell>], unblocked_cells_per_lane: Vec<u32>, rng: &mut ThreadRng, vehicle_blueprints: &Vec<VehicleBlueprint>) -> u32 {
-        if !(0.0..=1.0).contains(&vehicle_blueprints.iter().map(|vb| vb.traffic_density()).reduce(|acc, td| td + acc).unwrap()) {
+        if !(0.0..=1.0).contains(&vehicle_blueprints.iter().map(|vb| vb.traffic_density()).reduce(|acc, td| td + acc).unwrap_or(0.0)) {
             panic!("The sum of all traffic densities must be a number between 0 and 1.");
         }
         let mut n_cars: u32 = 0;

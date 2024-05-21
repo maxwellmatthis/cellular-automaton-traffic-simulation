@@ -53,8 +53,10 @@ benchmarks/adapter.py:6 and change the comment.
 
 ### Simulator
 
-Every constant used in the simulation has a reasonable default value but can also be manually changed
-when running the simulator from the command line (see usage below).
+Every constant used in the simulation has a reasonable default value but can also be set
+when running the simulator from the command line (see usage below) or from a yaml definition using
+the `-y` argument. __Note:__ when using a yaml definition, all arguments must be manually set. (See
+[example.yaml](example.yaml))
 
 The simulator can print the details of each round to stdout using the `-v` (verbose) switch or in an
 animated way using the `-a` (animate) switch and generate an image using the `-i` (image) switch.
@@ -94,6 +96,8 @@ Options:
           Whether to create a visualization image of the simulation
   -o, --out-path <OUT_PATH>
           Where to save the visualization image [default: traffic.png]
+  -y, --yaml <YAML>
+          Optionally provide simulator settings as a yaml file to avoid using the command line for detailed simulations. Note: All Options except `yaml` must be used!
   -h, --help
           Print help
   -V, --version
