@@ -253,7 +253,7 @@ The traffic light extension add traffic lights to the model. All traffic lights 
 
 The vehicle types extension adds the option to specify no only the density of traffic but the maximum speed, acceleration and traffic density of each different vehicle type. (See: `--vehicles` flag in [usage](#usage)).
 
-Some good values to play around with:
+Some realistic values to play around with:
 
 | Vehicle Type | Maximum Speed (cells/round) | Maximum Speed (km/h) | Acceleration (1/x * cells/round^2) | Acceleration (m/s^2) | Traffic Density |
 | ------------ | --------------------------- | -------------------- | ---------------------------- | -------------------- | --------------- |
