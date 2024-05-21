@@ -16,6 +16,7 @@ A cellular automaton for traffic simulation based on the Nagel-Schreckenberg mod
   - [Multi Lane Extension](#multi-lane-extension)
   - [Cell Blocking Extension](#cell-blocking-extension)
   - [Traffic Light Extension](#traffic-light-extension)
+  - [Vehicle Types Extension](#vehicle-types-extension)
 
 ## Installation & Setup
 
@@ -247,3 +248,18 @@ The lane blocking extension adds the option to block individual cells or ranges 
 ### Traffic Light Extension
 
 The traffic light extension add traffic lights to the model. All traffic lights turn red and green at the same time. Switching occurs every 100 model seconds (100 simulation rounds).
+
+### Vehicle Types Extension
+
+The vehicle types extension adds the option to specify no only the density of traffic but the maximum speed, acceleration and traffic density of each different vehicle type. (See: `--vehicles` flag in [usage](#usage)).
+
+Some good values to play around with:
+
+| Vehicle Type | Maximum Speed (cells/round) | Maximum Speed (km/h) | Acceleration (1/x * cells/round^2) | Acceleration (m/s^2) | Traffic Density |
+| ------------ | --------------------------- | -------------------- | ---------------------------- | -------------------- | --------------- |
+| Sports Car 🏎️     | 9 | 243 | 1 | 7.5  | 0.01 |
+| Car 🚗            | 5 | 135 | 2 | 3.75 | 0.19 |
+| Truck 🚛 / Bus 🚌 | 4 | 108 | 6 | 1.25 | 0.05 |
+
+The conversion factor from cells/round to km/h is `7.5*3.6`.
+
