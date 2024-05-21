@@ -40,6 +40,7 @@ class SimulationResult:
     dilly_dally_probability: float
     stay_in_lane_probability: float
 
+    # todo: sum runtimes to calculate time in simulation vs overhead
     runtime_s: float
     average_speed_kilometers_per_hour: float
     monitor_cells_flow_cars_per_minute: List[float]
