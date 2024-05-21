@@ -41,5 +41,4 @@ print(f"done in {time.time() - start}s")
 plot_3d(VARIABLE_X, VARIABLE_Y, "Average Speed (km/h)", max_speeds_expanded, densities_expanded, average_speeds)
 plot_3d(VARIABLE_X, VARIABLE_Y, "First Cell Flow (car/min)", max_speeds_expanded, densities_expanded, first_cell_flows)
 plot_3d(VARIABLE_X, VARIABLE_Y, "Accelerations (n/car/round)", max_speeds_expanded, densities_expanded, accelerations)
-plot_3d(VARIABLE_X, VARIABLE_Y, "Deaccelerations (n/car/round)", max_speeds_expanded, densities_expanded, deaccelerations)
 

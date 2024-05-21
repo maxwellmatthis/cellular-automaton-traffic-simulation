@@ -36,7 +36,6 @@ class SimulationResult:
     rounds: int
     lanes: int
     length: int
-    # TODO: add complex simulation parameters and exclude them from averageing
     cars: int
     dilly_dally_probability: float
     stay_in_lane_probability: float

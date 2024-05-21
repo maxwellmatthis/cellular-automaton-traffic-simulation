@@ -3,10 +3,10 @@ from adapter import run_average, SimulationOptions
 from plot_helper import plot
 
 VARIABLE = "Traffic Density"
-SIMULATIONS_EACH = 100
+SIMULATIONS_EACH = 5
 
 # x-axis
-densities = np.arange(0.05, 1, 0.05)
+densities = np.arange(0.01, 1, 0.01)
 
 # y-axes
 average_speeds = []
@@ -15,7 +15,7 @@ accelerations = []
 deaccelerations = []
 
 for density in densities:
-    metrics = run_average(SimulationOptions(vehicles=[(5, 1, density), dilly_dally_probability=0.0), SIMULATIONS_EACH)
+    metrics = run_average(SimulationOptions(vehicles=[(5, 1, density)], dilly_dally_probability=0.0, rounds=2048), SIMULATIONS_EACH)
     average_speeds.append(metrics.average_speed_kilometers_per_hour)
     first_cell_flows.append(metrics.monitor_cells_flow_cars_per_minute[0])
     accelerations.append(metrics.average_accelerations_n_per_car_per_round)
