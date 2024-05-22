@@ -1,10 +1,10 @@
-rounds: 1000
+rounds: 100
 lanes: 3
 length: 600
 vehicles:
-  - (9, 1, 0.01)
-  - (5, 2, 0.19)
-  - (4, 6, 0.05)
+  - (9, 1, 0.003)
+  - (5, 2, 0.243)
+  - (4, 6, 0.054)
 dilly_dally_probability: 0.15
 stay_in_lane_probability: 0.1
 monitor:
