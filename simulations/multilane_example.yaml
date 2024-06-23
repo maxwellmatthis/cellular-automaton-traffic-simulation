@@ -1,6 +1,6 @@
-rounds: 100
+rounds: 600
 lanes: 3
-length: 600
+length: 170
 vehicles:
   - (9, 1, 0.003)
   - (5, 2, 0.243)
@@ -14,9 +14,9 @@ monitor:
 traffic_lights:
   - (1, 150)
 block:
-  - (0, 150-180)
+  - (0, 150-170)
 verbose: false
-animate: false
+animate: true
 image: true
 out_path: example.png
 

@@ -1,0 +1,15 @@
+rounds: 600
+lanes: 1
+length: 1000
+vehicles:
+  - (5, 1, 0.3)
+dilly_dally_probability: 0.15
+stay_in_lane_probability: 1.0
+monitor:
+  - (0, 0)
+traffic_lights: []
+block: []
+verbose: false
+animate: false
+image: true
+out_path: task2.png
